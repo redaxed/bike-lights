@@ -9,7 +9,7 @@ This self-contained browser simulator previews the six effects planned for the f
 - `RAINBOW`
 - `FIND_BIKE_STROBE`
 
-It renders a lightweight three-dimensional bicycle pack without external JavaScript dependencies. Controls adjust pack size, target selection, palette, brightness, effect speed, synchronization, and camera position.
+It renders a lightweight three-dimensional bicycle pack with rear-mounted vertical LED strips, without external JavaScript dependencies. Controls adjust pack size, target selection, palette, brightness, effect speed, synchronization, and camera position.
 
 ## Run locally
 

@@ -56,6 +56,15 @@ const viewPresets = {
   },
 };
 
+const lightMast = {
+  x: 0.38,
+  z: -0.64,
+  mountY: 0.82,
+  lightBottomY: 0.88,
+  lightTopY: 2.46,
+  topY: 2.5,
+};
+
 const state = {
   effect: "rainbow",
   palette: "neon",
@@ -556,35 +565,27 @@ function drawBike(bike, bikes, basis) {
   );
   drawJoint(head, 0.12, bike.lead ? "#e6b598" : "#c99d84", basis);
 
+  const mastMount = worldPoint(
+    workingBike,
+    lightMast.x,
+    lightMast.mountY,
+    lightMast.z,
+  );
+  drawWorldLine(seat, mastMount, "#455064", 1.25, 0.86, basis);
+  drawWorldLine(rearHub, mastMount, "#455064", 1.2, 0.82, basis);
   drawWorldLine(
-    worldPoint(workingBike, -0.52, 1.04, -0.64),
-    worldPoint(workingBike, 0.52, 1.04, -0.64),
+    mastMount,
+    worldPoint(workingBike, lightMast.x, lightMast.topY, lightMast.z),
     "#303a48",
     2.1,
     1,
-    basis,
-  );
-  drawWorldLine(
-    seat,
-    worldPoint(workingBike, -0.48, 1.04, -0.62),
-    "#455064",
-    1.1,
-    0.8,
-    basis,
-  );
-  drawWorldLine(
-    seat,
-    worldPoint(workingBike, 0.48, 1.04, -0.62),
-    "#455064",
-    1.1,
-    0.8,
     basis,
   );
 
   drawLightStrip(workingBike, bike, bikes, basis);
 
   if (bike.lead) {
-    const labelPoint = project(worldPoint(workingBike, 0, 2.02, 0.18), basis);
+    const labelPoint = project(worldPoint(workingBike, 0, 2.64, 0.18), basis);
     if (labelPoint && labelPoint.depth < 35) {
       context.fillStyle = "rgba(221, 230, 243, 0.66)";
       context.font = "600 9px ui-sans-serif, system-ui, sans-serif";
@@ -598,8 +599,14 @@ function drawLightStrip(workingBike, originalBike, bikes, basis) {
   const pixelCount = 24;
   const targeted = targetMatches(originalBike, bikes);
   for (let index = 0; index < pixelCount; index += 1) {
-    const x = -0.48 + (index / (pixelCount - 1)) * 0.96;
-    const point = project(worldPoint(workingBike, x, 1.055, -0.665), basis);
+    const progress = index / (pixelCount - 1);
+    const y =
+      lightMast.lightBottomY +
+      progress * (lightMast.lightTopY - lightMast.lightBottomY);
+    const point = project(
+      worldPoint(workingBike, lightMast.x, y, lightMast.z - 0.025),
+      basis,
+    );
     if (!point) continue;
 
     const { rgb, intensity } = lightSample(
