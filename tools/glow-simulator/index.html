@@ -32,6 +32,18 @@
 
       <div class="workspace">
         <aside class="control-panel" aria-label="Simulation controls">
+          <section class="control-section switch-row phase-control">
+            <div>
+              <h2>Synchronized phase</h2>
+              <p>All bikes calculate the same frame from cue time.</p>
+            </div>
+            <label class="switch" for="sync-toggle">
+              <input id="sync-toggle" type="checkbox" checked />
+              <span aria-hidden="true"></span>
+              <span class="sr-only">Synchronized phase</span>
+            </label>
+          </section>
+
           <section class="control-section">
             <div class="section-heading">
               <h2>Light pattern</h2>
@@ -65,6 +77,18 @@
               <button
                 class="effect-button"
                 type="button"
+                data-effect="pulse"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-pulse"
+                  aria-hidden="true"
+                ></span>
+                <span>Breathing pulse</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
                 data-effect="wipe"
                 aria-pressed="false"
               >
@@ -85,6 +109,42 @@
                   aria-hidden="true"
                 ></span>
                 <span>Comet</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="scanner"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-scanner"
+                  aria-hidden="true"
+                ></span>
+                <span>Scanner</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="chase"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-chase"
+                  aria-hidden="true"
+                ></span>
+                <span>Segment chase</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="twinkle"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-twinkle"
+                  aria-hidden="true"
+                ></span>
+                <span>Twinkle</span>
               </button>
               <button
                 class="effect-button is-active"
@@ -169,18 +229,6 @@
               value="100"
               step="5"
             />
-          </section>
-
-          <section class="control-section switch-row">
-            <div>
-              <h2>Synchronized phase</h2>
-              <p>All bikes calculate the same frame from cue time.</p>
-            </div>
-            <label class="switch" for="sync-toggle">
-              <input id="sync-toggle" type="checkbox" checked />
-              <span aria-hidden="true"></span>
-              <span class="sr-only">Synchronized phase</span>
-            </label>
           </section>
         </aside>
 

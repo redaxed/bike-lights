@@ -1,0 +1,161 @@
+function effect(id, label, code, periodMs) {
+  return Object.freeze({ id, label, code, periodMs });
+}
+
+// IDs are append-only so future GlowCue packets can use the same stable mapping.
+export const effects = Object.freeze({
+  off: effect(0, "Off", "OFF", 0),
+  solid: effect(1, "Solid", "SOLID", 0),
+  wipe: effect(2, "Color wipe", "COLOR_WIPE", 3100),
+  comet: effect(3, "Comet", "COMET", 1700),
+  rainbow: effect(4, "Rainbow", "RAINBOW", 7143),
+  strobe: effect(5, "Find bike strobe", "FIND_BIKE_STROBE", 1050),
+  pulse: effect(6, "Breathing pulse", "PULSE", 2400),
+  scanner: effect(7, "Scanner", "SCANNER", 1800),
+  chase: effect(8, "Segment chase", "SEGMENT_CHASE", 720),
+  twinkle: effect(9, "Twinkle", "TWINKLE", 5760),
+});
+
+function positiveModulo(value, divisor) {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function normalizedPhase(cueTimeMs, periodMs) {
+  return positiveModulo(cueTimeMs, periodMs) / periodMs;
+}
+
+function paletteColor(palette, index) {
+  return palette[positiveModulo(index, palette.length)];
+}
+
+function clampUnit(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function hsvToRgb(hue, saturation = 1, value = 1) {
+  const normalizedHue = positiveModulo(hue, 1);
+  const sector = normalizedHue * 6;
+  const chroma = value * saturation;
+  const secondary = chroma * (1 - Math.abs((sector % 2) - 1));
+  let rgb;
+
+  if (sector < 1) rgb = [chroma, secondary, 0];
+  else if (sector < 2) rgb = [secondary, chroma, 0];
+  else if (sector < 3) rgb = [0, chroma, secondary];
+  else if (sector < 4) rgb = [0, secondary, chroma];
+  else if (sector < 5) rgb = [secondary, 0, chroma];
+  else rgb = [chroma, 0, secondary];
+
+  const match = value - chroma;
+  return rgb.map((channel) => Math.round((channel + match) * 255));
+}
+
+function hash32(value) {
+  let hash = value >>> 0;
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb352d);
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846ca68b);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+}
+
+function twinkleNoise(pixelIndex, frame) {
+  const seed =
+    Math.imul(pixelIndex + 1, 0x9e3779b1) + Math.imul(frame + 1, 0x85ebca6b);
+  return hash32(seed) / 0xffffffff;
+}
+
+/**
+ * Pure, renderer-independent effect kernel.
+ *
+ * Inputs intentionally match values that fit a future embedded renderer:
+ * an effect key, LED index/count, integer cue time in milliseconds, and RGB
+ * palette. The result is one RGB color plus normalized intensity.
+ */
+export function sampleEffect(
+  effectName,
+  pixelIndex,
+  pixelCount,
+  cueTimeMs,
+  palette,
+) {
+  if (!effects[effectName])
+    throw new RangeError(`Unknown effect: ${effectName}`);
+  if (
+    !Number.isInteger(pixelIndex) ||
+    pixelIndex < 0 ||
+    pixelIndex >= pixelCount
+  )
+    throw new RangeError("Pixel index must be inside the strip");
+  if (!Number.isInteger(pixelCount) || pixelCount < 1)
+    throw new RangeError("Pixel count must be a positive integer");
+  if (!Array.isArray(palette) || palette.length < 1)
+    throw new RangeError("Palette must contain at least one RGB color");
+
+  const timeMs = Math.trunc(cueTimeMs);
+  let rgb = palette[0];
+  let intensity = 1;
+
+  if (effectName === "off") {
+    intensity = 0;
+  } else if (effectName === "solid") {
+    rgb = palette[0];
+  } else if (effectName === "pulse") {
+    const phase = normalizedPhase(timeMs, effects.pulse.periodMs);
+    const triangle = 1 - Math.abs(phase * 2 - 1);
+    const eased = triangle * triangle * (3 - 2 * triangle);
+    rgb = paletteColor(palette, Math.floor(timeMs / effects.pulse.periodMs));
+    intensity = 0.1 + eased * 0.9;
+  } else if (effectName === "wipe") {
+    const phase = normalizedPhase(timeMs, effects.wipe.periodMs);
+    const fill = phase < 0.78 ? phase / 0.78 : (1 - phase) / 0.22;
+    const edge = fill * (pixelCount + 3) - 1.5;
+    rgb = paletteColor(palette, Math.floor(timeMs / effects.wipe.periodMs));
+    intensity = pixelIndex <= edge ? 1 : 0.03;
+  } else if (effectName === "comet") {
+    const head = normalizedPhase(timeMs, effects.comet.periodMs) * pixelCount;
+    const distance = positiveModulo(head - pixelIndex, pixelCount);
+    rgb = paletteColor(
+      palette,
+      Math.floor((pixelIndex / pixelCount) * palette.length),
+    );
+    intensity =
+      distance < pixelCount * 0.52 ? Math.exp(-distance * 0.3) : 0.025;
+  } else if (effectName === "scanner") {
+    const phase = normalizedPhase(timeMs, effects.scanner.periodMs);
+    const head = (1 - Math.abs(phase * 2 - 1)) * (pixelCount - 1);
+    const distance = Math.abs(pixelIndex - head);
+    const falloff = 1 - Math.min(1, distance / 5);
+    rgb = paletteColor(palette, Math.floor(timeMs / effects.scanner.periodMs));
+    intensity = Math.max(0.025, falloff * falloff);
+  } else if (effectName === "chase") {
+    const step = Math.floor(timeMs / 120);
+    const position = positiveModulo(pixelIndex - step, 6);
+    rgb = paletteColor(palette, Math.floor((pixelIndex - step) / 3));
+    intensity = position < 3 ? 1 : 0.035;
+  } else if (effectName === "twinkle") {
+    const frame = Math.floor(timeMs / 90);
+    const noise = twinkleNoise(pixelIndex, frame);
+    const colorSeed = hash32(
+      Math.imul(pixelIndex + 1, 0x27d4eb2d) ^ (frame + 1),
+    );
+    rgb = paletteColor(palette, colorSeed);
+    intensity = noise > 0.83 ? 0.55 + ((noise - 0.83) / 0.17) * 0.45 : 0.035;
+  } else if (effectName === "rainbow") {
+    rgb = hsvToRgb(pixelIndex / pixelCount - timeMs * 0.00014, 0.82, 1);
+  } else if (effectName === "strobe") {
+    const cycleMs = positiveModulo(timeMs, effects.strobe.periodMs);
+    const flash =
+      cycleMs < 75 ||
+      (cycleMs > 160 && cycleMs < 235) ||
+      (cycleMs > 320 && cycleMs < 395);
+    rgb = flash ? [255, 255, 255] : palette[0];
+    intensity = flash ? 1 : 0.055;
+  }
+
+  return {
+    rgb: rgb.map((channel) => Math.max(0, Math.min(255, Math.round(channel)))),
+    intensity: clampUnit(intensity),
+  };
+}

@@ -128,7 +128,8 @@ h2 {
 .workspace {
   display: grid;
   grid-template-columns: minmax(270px, 330px) minmax(0, 1fr);
-  min-height: min(790px, calc(100vh - 110px));
+  height: min(790px, calc(100vh - 110px));
+  min-height: 560px;
   overflow: hidden;
   border: 1px solid #222938;
   border-radius: 18px;
@@ -140,8 +141,11 @@ h2 {
   z-index: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
   border-right: 1px solid #222938;
   background: rgba(12, 16, 25, 0.98);
+  scrollbar-color: #354158 transparent;
 }
 
 .control-section {
@@ -231,6 +235,17 @@ h2 {
   box-shadow: 0 0 9px rgba(255, 83, 111, 0.5);
 }
 
+.effect-icon-pulse {
+  border-color: rgba(255, 83, 111, 0.72);
+  background: radial-gradient(
+    circle,
+    #ffffff 0 18%,
+    #ff536f 30% 48%,
+    rgba(255, 83, 111, 0.2) 70%
+  );
+  box-shadow: 0 0 8px rgba(255, 83, 111, 0.42);
+}
+
 .effect-icon-wipe {
   border-color: transparent;
   background: linear-gradient(
@@ -249,6 +264,36 @@ h2 {
     #50e8ff 50%,
     #ffffff 82%
   );
+}
+
+.effect-icon-scanner {
+  border-color: transparent;
+  background: linear-gradient(
+    90deg,
+    #202735 0 20%,
+    #65efff 42% 58%,
+    #202735 80%
+  );
+  box-shadow: 0 0 8px rgba(101, 239, 255, 0.38);
+}
+
+.effect-icon-chase {
+  border-color: transparent;
+  background: repeating-linear-gradient(
+    90deg,
+    #9d6cff 0 4px,
+    #202735 4px 7px,
+    #61efff 7px 11px
+  );
+}
+
+.effect-icon-twinkle {
+  border-color: #3e485b;
+  background:
+    radial-gradient(circle at 32% 30%, #ffffff 0 8%, transparent 12%),
+    radial-gradient(circle at 69% 61%, #61efff 0 10%, transparent 15%),
+    radial-gradient(circle at 37% 78%, #ff6da7 0 7%, transparent 12%), #202735;
+  box-shadow: 0 0 8px rgba(97, 239, 255, 0.25);
 }
 
 .effect-icon-rainbow {
@@ -367,6 +412,15 @@ input[type="range"] {
   margin-top: auto;
 }
 
+.phase-control {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  margin-top: 0;
+  background: rgba(12, 16, 25, 0.98);
+  box-shadow: 0 8px 18px rgba(5, 8, 14, 0.32);
+}
+
 .switch-row p {
   max-width: 190px;
   margin: 5px 0 0;
@@ -475,7 +529,7 @@ input[type="range"] {
 
 .canvas-wrap {
   position: relative;
-  min-height: 560px;
+  min-height: 0;
   overflow: hidden;
   background: #080c14;
   touch-action: none;
@@ -572,6 +626,8 @@ input[type="range"] {
 
   .workspace {
     grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
     min-height: 0;
     overflow: visible;
   }
@@ -580,6 +636,7 @@ input[type="range"] {
     order: 2;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-y: visible;
     border-right: 0;
     border-bottom: 1px solid #222938;
   }
@@ -594,6 +651,11 @@ input[type="range"] {
 
   .switch-row {
     margin-top: 0;
+  }
+
+  .phase-control {
+    position: static;
+    grid-column: 1 / -1;
   }
 
   .canvas-wrap {

@@ -1,0 +1,80 @@
+{
+  "pixelCount": 24,
+  "palette": [
+    [255, 68, 137],
+    [90, 232, 255],
+    [123, 255, 171]
+  ],
+  "cases": [
+    {
+      "effect": "off",
+      "pixel": 0,
+      "cueTimeMs": 500,
+      "rgb": [255, 68, 137],
+      "intensity": 0
+    },
+    {
+      "effect": "solid",
+      "pixel": 7,
+      "cueTimeMs": 500,
+      "rgb": [255, 68, 137],
+      "intensity": 1
+    },
+    {
+      "effect": "wipe",
+      "pixel": 20,
+      "cueTimeMs": 100,
+      "rgb": [255, 68, 137],
+      "intensity": 0.03
+    },
+    {
+      "effect": "comet",
+      "pixel": 10,
+      "cueTimeMs": 850,
+      "rgb": [90, 232, 255],
+      "intensity": 0.548812
+    },
+    {
+      "effect": "rainbow",
+      "pixel": 4,
+      "cueTimeMs": 2181,
+      "rgb": [255, 46, 220],
+      "intensity": 1
+    },
+    {
+      "effect": "strobe",
+      "pixel": 11,
+      "cueTimeMs": 170,
+      "rgb": [255, 255, 255],
+      "intensity": 1
+    },
+    {
+      "effect": "pulse",
+      "pixel": 18,
+      "cueTimeMs": 1200,
+      "rgb": [255, 68, 137],
+      "intensity": 1
+    },
+    {
+      "effect": "scanner",
+      "pixel": 12,
+      "cueTimeMs": 450,
+      "rgb": [255, 68, 137],
+      "intensity": 0.81
+    },
+    {
+      "effect": "chase",
+      "pixel": 5,
+      "cueTimeMs": 600,
+      "rgb": [255, 68, 137],
+      "intensity": 1
+    },
+    {
+      "effect": "twinkle",
+      "pixel": 5,
+      "cueTimeMs": 0,
+      "rgb": [255, 68, 137],
+      "intensity": 0.658148
+    }
+  ]
+}

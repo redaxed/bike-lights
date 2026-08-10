@@ -6,7 +6,7 @@ This repository is based on Meshtastic tag `v2.7.26.54e0d8d` and targets the Pla
 
 No custom LED firmware is enabled yet. Stock Meshtastic remains the acceptance-test firmware until the board passes the hardware checklist below.
 
-The browser-based [pack simulator](../tools/glow-simulator/) previews the planned patterns, pack targeting, and synchronized versus staggered phase without hardware.
+The browser-based [pack simulator](../tools/glow-simulator/) previews the planned patterns, pack targeting, and synchronized versus staggered phase without hardware. Its renderer-independent [effect kernel](../tools/glow-simulator/effects.js) already uses stable effect IDs, integer cue time, LED index/count, and deterministic output so the same fixed-time vectors can be carried into the native firmware tests.
 
 ## Safety boundary
 

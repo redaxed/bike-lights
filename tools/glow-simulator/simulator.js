@@ -1,14 +1,7 @@
+import { effects, sampleEffect } from "./effects.js";
+
 const canvas = document.getElementById("pack-canvas");
 const context = canvas.getContext("2d", { alpha: false });
-
-const effects = {
-  off: { label: "Off", code: "OFF" },
-  solid: { label: "Solid", code: "SOLID" },
-  wipe: { label: "Color wipe", code: "COLOR_WIPE" },
-  comet: { label: "Comet", code: "COMET" },
-  rainbow: { label: "Rainbow", code: "RAINBOW" },
-  strobe: { label: "Find bike strobe", code: "FIND_BIKE_STROBE" },
-};
 
 const palettes = {
   safety: [
@@ -231,62 +224,21 @@ function activePalette() {
   return palettes[state.palette];
 }
 
-function hsvToRgb(hue, saturation = 1, value = 1) {
-  const normalizedHue = ((hue % 1) + 1) % 1;
-  const sector = normalizedHue * 6;
-  const chroma = value * saturation;
-  const secondary = chroma * (1 - Math.abs((sector % 2) - 1));
-  let rgb;
-
-  if (sector < 1) rgb = [chroma, secondary, 0];
-  else if (sector < 2) rgb = [secondary, chroma, 0];
-  else if (sector < 3) rgb = [0, chroma, secondary];
-  else if (sector < 4) rgb = [0, secondary, chroma];
-  else if (sector < 5) rgb = [secondary, 0, chroma];
-  else rgb = [chroma, 0, secondary];
-
-  const match = value - chroma;
-  return rgb.map((channel) => Math.round((channel + match) * 255));
-}
-
 function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
   if (!isTargeted || state.effect === "off")
     return { rgb: [24, 29, 38], intensity: 0.035 };
 
   const palette = activePalette();
-  const offset = state.synchronized ? 0 : bikeIndex * 0.31;
-  const time = state.simulationTime * state.speed + offset;
-  let rgb = palette[0];
-  let intensity = 1;
-
-  if (state.effect === "solid") {
-    rgb = palette[0];
-  } else if (state.effect === "wipe") {
-    const cycle = (((time / 3.1) % 1) + 1) % 1;
-    const fill = cycle < 0.78 ? cycle / 0.78 : (1 - cycle) / 0.22;
-    const edge = fill * (pixelCount + 3) - 1.5;
-    intensity = pixelIndex <= edge ? 1 : 0.03;
-    rgb = palette[Math.floor(time / 3.1) % palette.length];
-  } else if (state.effect === "comet") {
-    const head = ((((time / 1.7) % 1) + 1) % 1) * pixelCount;
-    const distance = (head - pixelIndex + pixelCount) % pixelCount;
-    intensity =
-      distance < pixelCount * 0.52 ? Math.exp(-distance * 0.3) : 0.025;
-    rgb =
-      palette[
-        Math.floor((pixelIndex / pixelCount) * palette.length) % palette.length
-      ];
-  } else if (state.effect === "rainbow") {
-    rgb = hsvToRgb(pixelIndex / pixelCount - time * 0.14, 0.82, 1);
-  } else if (state.effect === "strobe") {
-    const cycle = ((time % 1.05) + 1.05) % 1.05;
-    const flash =
-      cycle < 0.075 ||
-      (cycle > 0.16 && cycle < 0.235) ||
-      (cycle > 0.32 && cycle < 0.395);
-    rgb = flash ? [255, 255, 255] : palette[0];
-    intensity = flash ? 1 : 0.055;
-  }
+  const phaseOffsetMs = state.synchronized ? 0 : bikeIndex * 310;
+  const cueTimeMs =
+    Math.floor(state.simulationTime * state.speed * 1000) + phaseOffsetMs;
+  const { rgb, intensity } = sampleEffect(
+    state.effect,
+    pixelIndex,
+    pixelCount,
+    cueTimeMs,
+    palette,
+  );
 
   return { rgb, intensity: intensity * state.brightness };
 }
@@ -852,4 +804,10 @@ resizeCanvas();
 updateInterface();
 requestAnimationFrame(frame);
 
-window.glowSimulator = { state, selectEffect, selectView };
+window.glowSimulator = {
+  effects,
+  sampleEffect,
+  state,
+  selectEffect,
+  selectView,
+};
