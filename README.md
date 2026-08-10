@@ -27,7 +27,7 @@ This repository contains the official device firmware for Meshtastic, an open-so
 
 Meshtastic enables text messaging, location sharing, and telemetry over a decentralized mesh network, making it ideal for outdoor adventures, emergency preparedness, and remote operations.
 
-This fork is also the development base for the Dax Glow synchronized bike-light prototype on the Heltec Wireless Tracker V2. See [the Glow prototype guide](docs/glow-prototype.md) for the pinned firmware base, hardware guardrails, bring-up gate, and development roadmap.
+This fork is also the development base for the Dax Glow synchronized bike-light prototype on the Heltec Wireless Tracker V2. See [the Glow prototype guide](docs/glow-prototype.md) for the pinned firmware base, hardware guardrails, and development roadmap, or open the [interactive pack simulator](tools/glow-simulator/) to preview the planned light patterns.
 
 ### Get Started
 

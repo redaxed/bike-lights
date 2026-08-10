@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Interactive Dax Glow bike-pack lighting simulator"
+    />
+    <title>Dax Glow Pack Simulator</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2212%22 fill=%22%2361efff%22/></svg>"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="simulator-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <p class="eyebrow">Dax Glow</p>
+            <h1>Pack light simulator</h1>
+          </div>
+        </div>
+        <div class="simulation-state" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="simulation-status">Live simulation</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="control-panel" aria-label="Simulation controls">
+          <section class="control-section">
+            <div class="section-heading">
+              <h2>Light pattern</h2>
+              <span id="effect-code">RAINBOW</span>
+            </div>
+            <div class="effect-grid" role="group" aria-label="Light pattern">
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="off"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-off"
+                  aria-hidden="true"
+                ></span>
+                <span>Off</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="solid"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-solid"
+                  aria-hidden="true"
+                ></span>
+                <span>Solid</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="wipe"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-wipe"
+                  aria-hidden="true"
+                ></span>
+                <span>Color wipe</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="comet"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-comet"
+                  aria-hidden="true"
+                ></span>
+                <span>Comet</span>
+              </button>
+              <button
+                class="effect-button is-active"
+                type="button"
+                data-effect="rainbow"
+                aria-pressed="true"
+              >
+                <span
+                  class="effect-icon effect-icon-rainbow"
+                  aria-hidden="true"
+                ></span>
+                <span>Rainbow</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="strobe"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-strobe"
+                  aria-hidden="true"
+                ></span>
+                <span>Find bike</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="control-section settings-grid">
+            <label class="field-label" for="palette-select">
+              Palette
+              <select id="palette-select">
+                <option value="safety">Safety amber</option>
+                <option value="electric">Electric blue</option>
+                <option value="neon" selected>Neon dusk</option>
+                <option value="ice">Ice white</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+
+            <label class="field-label" for="target-select">
+              Target
+              <select id="target-select">
+                <option value="all">All bikes</option>
+                <option value="lead">Lead bike</option>
+                <option value="alternate">Alternating bikes</option>
+                <option value="rear">Rear row</option>
+              </select>
+            </label>
+
+            <label class="field-label color-field" for="custom-color">
+              Solid color
+              <span class="color-control">
+                <input id="custom-color" type="color" value="#ff4f88" />
+                <span id="color-value">#FF4F88</span>
+              </span>
+            </label>
+          </section>
+
+          <section class="control-section sliders">
+            <label for="pack-size">
+              <span>Pack size</span>
+              <output id="pack-size-value" for="pack-size">9 bikes</output>
+            </label>
+            <input id="pack-size" type="range" min="1" max="12" value="9" />
+
+            <label for="brightness">
+              <span>Brightness</span>
+              <output id="brightness-value" for="brightness">72%</output>
+            </label>
+            <input id="brightness" type="range" min="5" max="100" value="72" />
+
+            <label for="effect-speed">
+              <span>Effect speed</span>
+              <output id="effect-speed-value" for="effect-speed">1.0×</output>
+            </label>
+            <input
+              id="effect-speed"
+              type="range"
+              min="25"
+              max="200"
+              value="100"
+              step="5"
+            />
+          </section>
+
+          <section class="control-section switch-row">
+            <div>
+              <h2>Synchronized phase</h2>
+              <p>All bikes calculate the same frame from cue time.</p>
+            </div>
+            <label class="switch" for="sync-toggle">
+              <input id="sync-toggle" type="checkbox" checked />
+              <span aria-hidden="true"></span>
+              <span class="sr-only">Synchronized phase</span>
+            </label>
+          </section>
+        </aside>
+
+        <section class="scene-panel" aria-label="Bike pack preview">
+          <div class="scene-toolbar">
+            <div class="view-switcher" role="group" aria-label="Camera view">
+              <button
+                class="view-button is-active"
+                type="button"
+                data-view="rear"
+                aria-pressed="true"
+              >
+                Rear
+              </button>
+              <button
+                class="view-button"
+                type="button"
+                data-view="pack"
+                aria-pressed="false"
+              >
+                Pack
+              </button>
+              <button
+                class="view-button"
+                type="button"
+                data-view="side"
+                aria-pressed="false"
+              >
+                Side
+              </button>
+              <button
+                class="view-button"
+                type="button"
+                data-view="overhead"
+                aria-pressed="false"
+              >
+                Overhead
+              </button>
+            </div>
+            <div class="scene-actions">
+              <button id="reset-camera" class="utility-button" type="button">
+                Reset view
+              </button>
+              <button
+                id="pause-toggle"
+                class="utility-button pause-button"
+                type="button"
+                aria-pressed="false"
+              >
+                Pause
+              </button>
+            </div>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas
+              id="pack-canvas"
+              role="img"
+              aria-label="Three-dimensional simulation of synchronized rear lights on a moving bicycle pack"
+            >
+              A simulated bicycle pack showing synchronized rear LED strips.
+            </canvas>
+            <div class="cue-readout" aria-live="polite">
+              <span class="cue-label">Active cue</span>
+              <strong id="cue-name">Rainbow</strong>
+              <span id="cue-detail">9 bikes · synchronized · neon dusk</span>
+            </div>
+            <div class="interaction-hint">Drag to orbit · scroll to zoom</div>
+          </div>
+
+          <div class="scene-footer">
+            <span
+              ><i class="footer-dot" aria-hidden="true"></i> Deterministic cue
+              preview</span
+            >
+            <span id="phase-readout">Phase 0.00 s</span>
+            <span>30 FPS render cap</span>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="simulator.js"></script>
+  </body>
+</html>

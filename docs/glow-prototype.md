@@ -6,6 +6,8 @@ This repository is based on Meshtastic tag `v2.7.26.54e0d8d` and targets the Pla
 
 No custom LED firmware is enabled yet. Stock Meshtastic remains the acceptance-test firmware until the board passes the hardware checklist below.
 
+The browser-based [pack simulator](../tools/glow-simulator/) previews the planned patterns, pack targeting, and synchronized versus staggered phase without hardware.
+
 ## Safety boundary
 
 - Attach the 915 MHz LoRa antenna before powering or flashing the board.
