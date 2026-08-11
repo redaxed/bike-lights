@@ -1032,6 +1032,7 @@ function selectEffect(effectName) {
 }
 
 const workshopElements = {
+  shell: document.querySelector(".simulator-shell"),
   canvasWrap: document.querySelector(".canvas-wrap"),
   panel: document.getElementById("pattern-workshop"),
   open: document.getElementById("open-workshop"),
@@ -1192,6 +1193,7 @@ function setBikeVariation(value) {
 
 function openWorkshop() {
   workshopElements.panel.hidden = false;
+  workshopElements.shell.classList.add("is-workshop-open");
   workshopElements.canvasWrap.classList.add("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "true");
   workshopElements.panel.scrollTop = 0;
@@ -1201,6 +1203,7 @@ function openWorkshop() {
 
 function closeWorkshop() {
   workshopElements.panel.hidden = true;
+  workshopElements.shell.classList.remove("is-workshop-open");
   workshopElements.canvasWrap.classList.remove("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "false");
   workshopElements.open.focus();
