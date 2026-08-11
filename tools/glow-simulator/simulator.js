@@ -98,6 +98,7 @@ let activeWorkshopPattern = null;
 let activeWorkshopRenderer = null;
 let workshopPreviewTimer = null;
 let workshopRuntimeError = null;
+let controlsCollapsedForWorkshop = false;
 
 const stars = Array.from({ length: 86 }, (_, index) => ({
   x: pseudoRandom(index * 17 + 5),
@@ -1198,6 +1199,10 @@ function setBikeVariation(value) {
 }
 
 function openWorkshop() {
+  controlsCollapsedForWorkshop =
+    !state.controlsCollapsed &&
+    window.matchMedia("(min-width: 901px) and (max-width: 1199px)").matches;
+  if (controlsCollapsedForWorkshop) setControlsCollapsed(true);
   workshopElements.panel.hidden = false;
   workshopElements.shell.classList.add("is-workshop-open");
   workshopElements.canvasWrap.classList.add("is-workshop-open");
@@ -1213,6 +1218,10 @@ function closeWorkshop() {
   workshopElements.canvasWrap.classList.remove("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "false");
   workshopElements.open.focus();
+  if (controlsCollapsedForWorkshop && state.controlsCollapsed) {
+    setControlsCollapsed(false);
+  }
+  controlsCollapsedForWorkshop = false;
   window.requestAnimationFrame(resizeCanvas);
 }
 
@@ -1365,6 +1374,7 @@ document.querySelectorAll("[data-view]").forEach((button) => {
 });
 
 controlsToggle.addEventListener("click", () => {
+  controlsCollapsedForWorkshop = false;
   setControlsCollapsed(!state.controlsCollapsed);
 });
 
