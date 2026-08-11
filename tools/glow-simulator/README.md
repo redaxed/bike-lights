@@ -1,6 +1,6 @@
 # Dax Glow pack simulator
 
-This self-contained browser simulator previews thirty-six effects for the GlowModule firmware:
+This self-contained browser simulator previews thirty-six effects for the GlowModule firmware, grouped as 10 core, 6 generative, and 20 epic patterns:
 
 | ID  | Code                 | Behavior                          |
 | --- | -------------------- | --------------------------------- |

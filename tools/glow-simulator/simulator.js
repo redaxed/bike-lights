@@ -691,6 +691,41 @@ function selectView(viewName) {
   updateInterface();
 }
 
+function groupEffectButtons() {
+  const groups = [
+    { label: "Core", minimumId: 0, maximumId: 9 },
+    { label: "Generative", minimumId: 10, maximumId: 15 },
+    { label: "Epic", minimumId: 16, maximumId: 35 },
+  ];
+  const grid = document.querySelector(".effect-grid");
+  const buttons = new Map(
+    [...grid.querySelectorAll("[data-effect]")].map((button) => [
+      button.dataset.effect,
+      button,
+    ]),
+  );
+  const fragment = document.createDocumentFragment();
+
+  groups.forEach(({ label, minimumId, maximumId }) => {
+    const effects = Object.entries(simulatorEffects)
+      .filter(([, effect]) => effect.id >= minimumId && effect.id <= maximumId)
+      .sort((first, second) => first[1].id - second[1].id);
+    const heading = document.createElement("h3");
+    const count = document.createElement("small");
+
+    heading.className = "effect-group-heading";
+    heading.textContent = label;
+    count.textContent = `${effects.length} patterns`;
+    heading.append(count);
+    fragment.append(heading);
+    effects.forEach(([effectName]) => fragment.append(buttons.get(effectName)));
+  });
+
+  grid.replaceChildren(fragment);
+}
+
+groupEffectButtons();
+
 document.querySelectorAll("[data-effect]").forEach((button) => {
   button.addEventListener("click", () => selectEffect(button.dataset.effect));
 });
