@@ -238,6 +238,7 @@ function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
     pixelCount,
     cueTimeMs,
     palette,
+    bikeIndex,
   );
 
   return { rgb, intensity: intensity * state.brightness };

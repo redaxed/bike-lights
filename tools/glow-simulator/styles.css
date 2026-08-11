@@ -308,6 +308,52 @@ h2 {
   );
 }
 
+.effect-icon-supernova {
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 25% 30%, #ffffff 0 9%, transparent 13%),
+    radial-gradient(circle at 75% 30%, #ffffff 0 9%, transparent 13%),
+    radial-gradient(circle at 28% 73%, #61efff 0 10%, transparent 15%),
+    radial-gradient(circle at 72% 73%, #ff6da7 0 10%, transparent 15%), #202735;
+  box-shadow: 0 0 9px rgba(97, 239, 255, 0.34);
+}
+
+.effect-icon-sierpinski {
+  border-color: transparent;
+  background:
+    conic-gradient(
+      from 30deg at 50% 70%,
+      transparent 0 33%,
+      #61efff 0 66%,
+      transparent 0
+    ),
+    conic-gradient(
+      from 30deg at 50% 28%,
+      transparent 0 33%,
+      #9d6cff 0 66%,
+      transparent 0
+    ),
+    #202735;
+}
+
+.effect-icon-fold {
+  border-color: transparent;
+  background: repeating-linear-gradient(
+    135deg,
+    #61efff 0 2px,
+    #202735 2px 4px,
+    #9d6cff 4px 6px
+  );
+}
+
+.effect-icon-cantor {
+  border-color: transparent;
+  background:
+    linear-gradient(90deg, #ff6da7 0 31%, transparent 31% 68%, #61efff 68%),
+    #202735;
+  box-shadow: inset 0 5px 0 -2px #9d6cff;
+}
+
 .effect-icon-strobe {
   border-color: #f7fbff;
   background: #ffffff;

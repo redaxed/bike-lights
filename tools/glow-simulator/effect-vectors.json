@@ -75,6 +75,38 @@
       "cueTimeMs": 0,
       "rgb": [255, 68, 137],
       "intensity": 0.658148
+    },
+    {
+      "effect": "supernova",
+      "pixel": 11,
+      "cueTimeMs": 0,
+      "bikeIndex": 0,
+      "rgb": [255, 68, 137],
+      "intensity": 0.986547
+    },
+    {
+      "effect": "sierpinski",
+      "pixel": 1,
+      "cueTimeMs": 3000,
+      "bikeIndex": 2,
+      "rgb": [255, 68, 137],
+      "intensity": 1
+    },
+    {
+      "effect": "fold",
+      "pixel": 7,
+      "cueTimeMs": 1250,
+      "bikeIndex": 0,
+      "rgb": [123, 255, 171],
+      "intensity": 0.895229
+    },
+    {
+      "effect": "cantor",
+      "pixel": 0,
+      "cueTimeMs": 3000,
+      "bikeIndex": 1,
+      "rgb": [90, 232, 255],
+      "intensity": 0.178914
     }
   ]
 }

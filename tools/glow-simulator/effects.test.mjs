@@ -21,34 +21,68 @@ assert.deepEqual(effectNames, [
   "scanner",
   "chase",
   "twinkle",
+  "supernova",
+  "sierpinski",
+  "fold",
+  "cantor",
 ]);
 assert.deepEqual(
   effectNames.map((name) => effects[name].id),
   effectNames.map((_, index) => index),
 );
+assert.deepEqual(
+  vectors.cases.map((vector) => vector.effect),
+  effectNames,
+);
 
 for (const effectName of effectNames) {
   for (const cueTimeMs of [0, 137, 1024, 3100, 9876]) {
     for (const pixelIndex of [0, 11, 23]) {
-      const sample = sampleEffect(
+      for (const bikeIndex of [0, 3, 8]) {
+        const sample = sampleEffect(
+          effectName,
+          pixelIndex,
+          pixelCount,
+          cueTimeMs,
+          palette,
+          bikeIndex,
+        );
+        assert.equal(sample.rgb.length, 3);
+        sample.rgb.forEach((channel) => {
+          assert.equal(Number.isInteger(channel), true);
+          assert.equal(channel >= 0 && channel <= 255, true);
+        });
+        assert.equal(sample.intensity >= 0 && sample.intensity <= 1, true);
+        assert.deepEqual(
+          sample,
+          sampleEffect(
+            effectName,
+            pixelIndex,
+            pixelCount,
+            cueTimeMs,
+            palette,
+            bikeIndex,
+          ),
+        );
+      }
+    }
+  }
+}
+
+for (const effectName of ["sierpinski", "cantor"]) {
+  const packSlices = [0, 1].map((bikeIndex) =>
+    Array.from({ length: pixelCount }, (_, pixelIndex) =>
+      sampleEffect(
         effectName,
         pixelIndex,
         pixelCount,
-        cueTimeMs,
+        2100,
         palette,
-      );
-      assert.equal(sample.rgb.length, 3);
-      sample.rgb.forEach((channel) => {
-        assert.equal(Number.isInteger(channel), true);
-        assert.equal(channel >= 0 && channel <= 255, true);
-      });
-      assert.equal(sample.intensity >= 0 && sample.intensity <= 1, true);
-      assert.deepEqual(
-        sample,
-        sampleEffect(effectName, pixelIndex, pixelCount, cueTimeMs, palette),
-      );
-    }
-  }
+        bikeIndex,
+      ),
+    ),
+  );
+  assert.notDeepEqual(packSlices[0], packSlices[1]);
 }
 
 for (const vector of vectors.cases) {
@@ -58,6 +92,7 @@ for (const vector of vectors.cases) {
     pixelCount,
     vector.cueTimeMs,
     palette,
+    vector.bikeIndex ?? 0,
   );
   assert.deepEqual(sample.rgb, vector.rgb);
   assert.equal(Math.abs(sample.intensity - vector.intensity) <= 0.000001, true);

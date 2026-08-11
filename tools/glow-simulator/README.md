@@ -1,6 +1,6 @@
 # Dax Glow pack simulator
 
-This self-contained browser simulator previews ten effects for the GlowModule firmware:
+This self-contained browser simulator previews fourteen effects for the GlowModule firmware:
 
 | ID  | Code               | Behavior                         |
 | --- | ------------------ | -------------------------------- |
@@ -14,6 +14,10 @@ This self-contained browser simulator previews ten effects for the GlowModule fi
 | 7   | `SCANNER`          | Bidirectional moving highlight   |
 | 8   | `SEGMENT_CHASE`    | Rising three-pixel segments      |
 | 9   | `TWINKLE`          | Deterministic sparse sparkles    |
+| 10  | `BINARY_SUPERNOVA` | One pulse recursively splits     |
+| 11  | `SIERPINSKI_LACE`  | Distributed Rule 90 fractal      |
+| 12  | `INFINITE_FOLD`    | Nested mirrored light folds      |
+| 13  | `CANTOR_BLOOM`     | Recursive islands split and join |
 
 It renders a lightweight three-dimensional bicycle pack with rear-mounted vertical LED strips, without external JavaScript dependencies. Controls adjust pack size, target selection, palette, brightness, effect speed, synchronization, and camera position.
 
@@ -31,7 +35,7 @@ The simulator is a visual design tool, not a timing-accurate electrical or photo
 
 ## Firmware handoff contract
 
-[`effects.js`](effects.js) is a renderer-independent effect kernel. Every sample uses only a stable effect ID, LED index/count, integer cue time in milliseconds, and an RGB palette; it returns RGB plus normalized intensity. Synchronized bikes receive the same cue time, while staggered bikes receive a deterministic time offset. Effect IDs are append-only so future `GlowCue` packets can keep the same mapping. [`effect-vectors.json`](effect-vectors.json) provides language-neutral expected outputs for the browser and future C++ host tests.
+[`effects.js`](effects.js) is a renderer-independent effect kernel. Every sample uses only a stable effect ID, LED index/count, integer cue time in milliseconds, an RGB palette, and an optional pack index; it returns RGB plus normalized intensity. Synchronized bikes receive the same cue time, while staggered bikes receive a deterministic time offset. The fractal effects use the pack index to render coordinated slices of a larger pattern. Effect IDs are append-only so future `GlowCue` packets can keep the same mapping. [`effect-vectors.json`](effect-vectors.json) provides language-neutral expected outputs for the browser and future C++ host tests.
 
 Run the host-side deterministic checks with:
 

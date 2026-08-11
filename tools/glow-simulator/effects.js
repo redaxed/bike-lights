@@ -14,6 +14,10 @@ export const effects = Object.freeze({
   scanner: effect(7, "Scanner", "SCANNER", 1800),
   chase: effect(8, "Segment chase", "SEGMENT_CHASE", 720),
   twinkle: effect(9, "Twinkle", "TWINKLE", 5760),
+  supernova: effect(10, "Binary supernova", "BINARY_SUPERNOVA", 6000),
+  sierpinski: effect(11, "Sierpiński lace", "SIERPINSKI_LACE", 6400),
+  fold: effect(12, "Infinite fold", "INFINITE_FOLD", 5200),
+  cantor: effect(13, "Cantor bloom", "CANTOR_BLOOM", 7000),
 });
 
 function positiveModulo(value, divisor) {
@@ -66,12 +70,46 @@ function twinkleNoise(pixelIndex, frame) {
   return hash32(seed) / 0xffffffff;
 }
 
+function smoothstep(value) {
+  const clamped = clampUnit(value);
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
+function peak(distance, width) {
+  return clampUnit(1 - Math.abs(distance) / width);
+}
+
+function binaryPulse(position, depth) {
+  const cellCount = 2 ** depth;
+  const distance = positiveModulo(position * cellCount, 1) - 0.5;
+  return smoothstep(peak(distance, Math.max(0.12, 0.3 - depth * 0.025)));
+}
+
+function rule90Cell(row, x) {
+  const sum = row + x;
+  if (sum % 2 !== 0) return false;
+  const left = sum / 2;
+  const right = row - left;
+  return left >= 0 && right >= 0 && (left & right) === 0;
+}
+
+function cantorAlive(position, depth) {
+  let cursor = position;
+  for (let level = 0; level < depth; level += 1) {
+    const digit = Math.min(2, Math.floor(cursor * 3));
+    if (digit === 1) return 0;
+    cursor = positiveModulo(cursor * 3, 1);
+  }
+  return 1;
+}
+
 /**
  * Pure, renderer-independent effect kernel.
  *
  * Inputs intentionally match values that fit a future embedded renderer:
- * an effect key, LED index/count, integer cue time in milliseconds, and RGB
- * palette. The result is one RGB color plus normalized intensity.
+ * an effect key, LED index/count, integer cue time in milliseconds, RGB
+ * palette, and an optional pack index. The result is one RGB color plus
+ * normalized intensity.
  */
 export function sampleEffect(
   effectName,
@@ -79,6 +117,7 @@ export function sampleEffect(
   pixelCount,
   cueTimeMs,
   palette,
+  bikeIndex = 0,
 ) {
   if (!effects[effectName])
     throw new RangeError(`Unknown effect: ${effectName}`);
@@ -92,6 +131,8 @@ export function sampleEffect(
     throw new RangeError("Pixel count must be a positive integer");
   if (!Array.isArray(palette) || palette.length < 1)
     throw new RangeError("Palette must contain at least one RGB color");
+  if (!Number.isInteger(bikeIndex) || bikeIndex < 0)
+    throw new RangeError("Bike index must be a non-negative integer");
 
   const timeMs = Math.trunc(cueTimeMs);
   let rgb = palette[0];
@@ -152,6 +193,68 @@ export function sampleEffect(
       (cycleMs > 320 && cycleMs < 395);
     rgb = flash ? [255, 255, 255] : palette[0];
     intensity = flash ? 1 : 0.055;
+  } else if (effectName === "supernova") {
+    const position = (pixelIndex + 0.5) / pixelCount;
+    const depthPosition =
+      normalizedPhase(timeMs, effects.supernova.periodMs) * 6;
+    const depth = Math.min(5, Math.floor(depthPosition));
+    const transition = smoothstep(depthPosition - depth);
+    const current = binaryPulse(position, depth);
+    const next = binaryPulse(position, Math.min(5, depth + 1));
+    rgb = paletteColor(palette, depth);
+    intensity =
+      0.025 +
+      Math.min(1, current * (1 - transition) + next * transition) * 0.975;
+  } else if (effectName === "sierpinski") {
+    const row = positiveModulo(Math.floor(timeMs / 100) + bikeIndex * 3, 64);
+    const x = Math.round((pixelIndex / Math.max(1, pixelCount - 1)) * 62 - 31);
+    let lace = 0;
+    for (let trail = 0; trail < 3; trail += 1) {
+      const trailRow = row - trail;
+      if (trailRow >= 0 && rule90Cell(trailRow, x))
+        lace = Math.max(lace, [1, 0.42, 0.16][trail]);
+    }
+    rgb = paletteColor(palette, Math.floor(row / 8) + bikeIndex);
+    intensity = 0.025 + lace * 0.975;
+  } else if (effectName === "fold") {
+    const position = (pixelIndex + 0.5) / pixelCount;
+    const phase = normalizedPhase(timeMs, effects.fold.periodMs);
+    let folded = position;
+    let strongest = 0;
+    let strongestDepth = 0;
+    for (let depth = 0; depth < 5; depth += 1) {
+      folded = Math.abs(folded * 2 - 1);
+      const head = positiveModulo(phase + depth * 0.13, 1);
+      const distance = Math.min(
+        Math.abs(folded - head),
+        1 - Math.abs(folded - head),
+      );
+      const level = peak(distance, 0.11 - depth * 0.012) * (1 - depth * 0.1);
+      if (level > strongest) {
+        strongest = level;
+        strongestDepth = depth;
+      }
+    }
+    rgb = paletteColor(palette, strongestDepth + Math.floor(timeMs / 5200));
+    intensity = 0.025 + smoothstep(strongest) * 0.975;
+  } else if (effectName === "cantor") {
+    const position = (pixelIndex + 0.5) / pixelCount;
+    const maxDepth = Math.min(
+      6,
+      Math.max(1, Math.floor(Math.log(pixelCount) / Math.log(3)) + 2),
+    );
+    const phase = normalizedPhase(
+      timeMs + bikeIndex * 280,
+      effects.cantor.periodMs,
+    );
+    const depthPosition = (1 - Math.abs(phase * 2 - 1)) * maxDepth;
+    const depth = Math.floor(depthPosition);
+    const transition = smoothstep(depthPosition - depth);
+    const current = cantorAlive(position, depth);
+    const next = cantorAlive(position, Math.min(maxDepth, depth + 1));
+    rgb = paletteColor(palette, depth + bikeIndex);
+    intensity =
+      0.025 + (current * (1 - transition) + next * transition) * 0.975;
   }
 
   return {
