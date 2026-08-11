@@ -60,7 +60,7 @@ const lightMast = {
 };
 
 const state = {
-  effect: "rainbow",
+  effect: "flow",
   palette: "neon",
   customColor: "#ff4f88",
   target: "all",

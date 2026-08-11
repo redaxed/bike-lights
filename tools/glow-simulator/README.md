@@ -1,6 +1,6 @@
 # Dax Glow pack simulator
 
-This self-contained browser simulator previews fourteen effects for the GlowModule firmware:
+This self-contained browser simulator previews sixteen effects for the GlowModule firmware:
 
 | ID  | Code               | Behavior                         |
 | --- | ------------------ | -------------------------------- |
@@ -18,6 +18,8 @@ This self-contained browser simulator previews fourteen effects for the GlowModu
 | 11  | `SIERPINSKI_LACE`  | Distributed Rule 90 fractal      |
 | 12  | `INFINITE_FOLD`    | Nested mirrored light folds      |
 | 13  | `CANTOR_BLOOM`     | Recursive islands split and join |
+| 14  | `FRACTAL_FLOW`     | Always-on multiscale color field |
+| 15  | `MOIRE_TIDE`       | Always-on interference bands     |
 
 It renders a lightweight three-dimensional bicycle pack with rear-mounted vertical LED strips, without external JavaScript dependencies. Controls adjust pack size, target selection, palette, brightness, effect speed, synchronization, and camera position.
 

@@ -47,7 +47,7 @@
           <section class="control-section">
             <div class="section-heading">
               <h2>Light pattern</h2>
-              <span id="effect-code">RAINBOW</span>
+              <span id="effect-code">FRACTAL_FLOW</span>
             </div>
             <div class="effect-grid" role="group" aria-label="Light pattern">
               <button
@@ -147,16 +147,40 @@
                 <span>Twinkle</span>
               </button>
               <button
-                class="effect-button is-active"
+                class="effect-button"
                 type="button"
                 data-effect="rainbow"
-                aria-pressed="true"
+                aria-pressed="false"
               >
                 <span
                   class="effect-icon effect-icon-rainbow"
                   aria-hidden="true"
                 ></span>
                 <span>Rainbow</span>
+              </button>
+              <button
+                class="effect-button is-active"
+                type="button"
+                data-effect="flow"
+                aria-pressed="true"
+              >
+                <span
+                  class="effect-icon effect-icon-flow"
+                  aria-hidden="true"
+                ></span>
+                <span>Fractal flow</span>
+              </button>
+              <button
+                class="effect-button"
+                type="button"
+                data-effect="moire"
+                aria-pressed="false"
+              >
+                <span
+                  class="effect-icon effect-icon-moire"
+                  aria-hidden="true"
+                ></span>
+                <span>Moiré tide</span>
               </button>
               <button
                 class="effect-button"
@@ -342,7 +366,7 @@
             </canvas>
             <div class="cue-readout" aria-live="polite">
               <span class="cue-label">Active cue</span>
-              <strong id="cue-name">Rainbow</strong>
+              <strong id="cue-name">Fractal flow</strong>
               <span id="cue-detail">9 bikes · synchronized · neon dusk</span>
             </div>
             <div class="interaction-hint">Drag to orbit · scroll to zoom</div>

@@ -18,7 +18,11 @@ const effects = Object.freeze({
   sierpinski: effect(11, "Sierpiński lace", "SIERPINSKI_LACE", 6400),
   fold: effect(12, "Infinite fold", "INFINITE_FOLD", 5200),
   cantor: effect(13, "Cantor bloom", "CANTOR_BLOOM", 7000),
+  flow: effect(14, "Fractal flow", "FRACTAL_FLOW", 8600),
+  moire: effect(15, "Moiré tide", "MOIRE_TIDE", 6200),
 });
+
+const ACTIVE_PATTERN_FLOOR = 0.34;
 
 function positiveModulo(value, divisor) {
   return ((value % divisor) + divisor) % divisor;
@@ -73,6 +77,24 @@ function twinkleNoise(pixelIndex, frame) {
 function smoothstep(value) {
   const clamped = clampUnit(value);
   return clamped * clamped * (3 - 2 * clamped);
+}
+
+function triangleWave(value) {
+  return 1 - Math.abs(positiveModulo(value, 1) * 2 - 1);
+}
+
+function paletteGradient(palette, position) {
+  const firstIndex = Math.floor(position);
+  const blend = smoothstep(position - firstIndex);
+  const first = paletteColor(palette, firstIndex);
+  const second = paletteColor(palette, firstIndex + 1);
+  return first.map(
+    (channel, index) => channel + (second[index] - channel) * blend,
+  );
+}
+
+function activePatternIntensity(value) {
+  return ACTIVE_PATTERN_FLOOR + clampUnit(value) * (1 - ACTIVE_PATTERN_FLOOR);
 }
 
 function peak(distance, width) {
@@ -201,10 +223,12 @@ function sampleEffect(
     const transition = smoothstep(depthPosition - depth);
     const current = binaryPulse(position, depth);
     const next = binaryPulse(position, Math.min(5, depth + 1));
-    rgb = paletteColor(palette, depth);
-    intensity =
-      0.025 +
-      Math.min(1, current * (1 - transition) + next * transition) * 0.975;
+    const split = Math.min(1, current * (1 - transition) + next * transition);
+    rgb = paletteGradient(
+      palette,
+      depth + position * palette.length + transition,
+    );
+    intensity = activePatternIntensity(split);
   } else if (effectName === "sierpinski") {
     const row = positiveModulo(Math.floor(timeMs / 100) + bikeIndex * 3, 64);
     const x = Math.round((pixelIndex / Math.max(1, pixelCount - 1)) * 62 - 31);
@@ -214,8 +238,14 @@ function sampleEffect(
       if (trailRow >= 0 && rule90Cell(trailRow, x))
         lace = Math.max(lace, [1, 0.42, 0.16][trail]);
     }
-    rgb = paletteColor(palette, Math.floor(row / 8) + bikeIndex);
-    intensity = 0.025 + lace * 0.975;
+    rgb = paletteGradient(
+      palette,
+      (pixelIndex / pixelCount) * palette.length +
+        row / 12 +
+        bikeIndex * 0.24 +
+        lace * 0.6,
+    );
+    intensity = activePatternIntensity(lace);
   } else if (effectName === "fold") {
     const position = (pixelIndex + 0.5) / pixelCount;
     const phase = normalizedPhase(timeMs, effects.fold.periodMs);
@@ -235,8 +265,11 @@ function sampleEffect(
         strongestDepth = depth;
       }
     }
-    rgb = paletteColor(palette, strongestDepth + Math.floor(timeMs / 5200));
-    intensity = 0.025 + smoothstep(strongest) * 0.975;
+    rgb = paletteGradient(
+      palette,
+      folded * palette.length + phase * palette.length + strongestDepth * 0.3,
+    );
+    intensity = activePatternIntensity(smoothstep(strongest));
   } else if (effectName === "cantor") {
     const position = (pixelIndex + 0.5) / pixelCount;
     const maxDepth = Math.min(
@@ -252,9 +285,49 @@ function sampleEffect(
     const transition = smoothstep(depthPosition - depth);
     const current = cantorAlive(position, depth);
     const next = cantorAlive(position, Math.min(maxDepth, depth + 1));
-    rgb = paletteColor(palette, depth + bikeIndex);
-    intensity =
-      0.025 + (current * (1 - transition) + next * transition) * 0.975;
+    const islands = current * (1 - transition) + next * transition;
+    rgb = paletteGradient(
+      palette,
+      position * palette.length * 2 +
+        depth +
+        phase * palette.length +
+        bikeIndex * 0.22,
+    );
+    intensity = activePatternIntensity(islands);
+  } else if (effectName === "flow") {
+    const position = (pixelIndex + 0.5) / pixelCount;
+    const phase = normalizedPhase(timeMs, effects.flow.periodMs);
+    const broad = triangleWave(position * 1.25 - phase);
+    const medium = triangleWave(
+      position * 2.75 + phase * 1.7 + bikeIndex * 0.03,
+    );
+    const fine = triangleWave(position * 5.5 - phase * 2.4);
+    const field = broad * 0.5 + medium * 0.3 + fine * 0.2;
+    rgb = paletteGradient(
+      palette,
+      position * palette.length * 1.4 +
+        phase * palette.length * 2.2 +
+        field * 1.8 +
+        bikeIndex * 0.12,
+    );
+    intensity = 0.58 + field * 0.42;
+  } else if (effectName === "moire") {
+    const position = (pixelIndex + 0.5) / pixelCount;
+    const phase = normalizedPhase(timeMs, effects.moire.periodMs);
+    const rising = triangleWave(position * 4 - phase * 2.1);
+    const falling = triangleWave(
+      position * 7 + phase * 1.35 + bikeIndex * 0.05,
+    );
+    const interference = 1 - Math.abs(rising - falling);
+    const facets = triangleWave(position * 13 - phase * 0.7);
+    const field = interference * 0.75 + facets * 0.25;
+    rgb = paletteGradient(
+      palette,
+      field * (palette.length + 0.8) +
+        phase * palette.length +
+        bikeIndex * 0.16,
+    );
+    intensity = 0.52 + field * 0.48;
   }
 
   return {

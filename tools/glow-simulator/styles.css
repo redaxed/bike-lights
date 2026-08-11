@@ -308,6 +308,25 @@ h2 {
   );
 }
 
+.effect-icon-flow {
+  border-color: transparent;
+  background: repeating-radial-gradient(
+    circle at 24% 72%,
+    #ff6da7 0 3px,
+    #9d6cff 3px 6px,
+    #61efff 6px 9px
+  );
+  box-shadow: 0 0 9px rgba(157, 108, 255, 0.38);
+}
+
+.effect-icon-moire {
+  border-color: transparent;
+  background:
+    repeating-linear-gradient(35deg, transparent 0 3px, #61efff 3px 5px),
+    repeating-linear-gradient(-35deg, #202735 0 3px, #ff6da7 3px 5px);
+  box-shadow: 0 0 8px rgba(97, 239, 255, 0.3);
+}
+
 .effect-icon-supernova {
   border-color: transparent;
   background:

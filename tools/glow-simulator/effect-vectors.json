@@ -81,15 +81,15 @@
       "pixel": 11,
       "cueTimeMs": 0,
       "bikeIndex": 0,
-      "rgb": [255, 68, 137],
-      "intensity": 0.986547
+      "rgb": [103, 241, 221],
+      "intensity": 0.990893
     },
     {
       "effect": "sierpinski",
       "pixel": 1,
       "cueTimeMs": 3000,
       "bikeIndex": 2,
-      "rgb": [255, 68, 137],
+      "rgb": [94, 235, 246],
       "intensity": 1
     },
     {
@@ -97,16 +97,32 @@
       "pixel": 7,
       "cueTimeMs": 1250,
       "bikeIndex": 0,
-      "rgb": [123, 255, 171],
-      "intensity": 0.895229
+      "rgb": [98, 238, 235],
+      "intensity": 0.929078
     },
     {
       "effect": "cantor",
       "pixel": 0,
       "cueTimeMs": 3000,
       "bikeIndex": 1,
-      "rgb": [90, 232, 255],
-      "intensity": 0.178914
+      "rgb": [118, 251, 184],
+      "intensity": 0.444188
+    },
+    {
+      "effect": "flow",
+      "pixel": 9,
+      "cueTimeMs": 2181,
+      "bikeIndex": 3,
+      "rgb": [121, 254, 175],
+      "intensity": 0.852165
+    },
+    {
+      "effect": "moire",
+      "pixel": 15,
+      "cueTimeMs": 1370,
+      "bikeIndex": 2,
+      "rgb": [90, 232, 254],
+      "intensity": 0.9102
     }
   ]
 }

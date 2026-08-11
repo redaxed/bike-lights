@@ -9,6 +9,14 @@ const vectors = JSON.parse(
   readFileSync(new URL("./effect-vectors.json", import.meta.url), "utf8"),
 );
 const { palette, pixelCount } = vectors;
+const ACTIVE_EFFECT_MINIMUMS = Object.freeze({
+  supernova: 0.34,
+  sierpinski: 0.34,
+  fold: 0.34,
+  cantor: 0.34,
+  flow: 0.58,
+  moire: 0.52,
+});
 
 const effectNames = Object.keys(effects);
 
@@ -27,6 +35,8 @@ assert.deepEqual(effectNames, [
   "sierpinski",
   "fold",
   "cantor",
+  "flow",
+  "moire",
 ]);
 assert.deepEqual(
   effectNames.map((name) => effects[name].id),
@@ -85,6 +95,42 @@ for (const effectName of ["sierpinski", "cantor"]) {
     ),
   );
   assert.notDeepEqual(packSlices[0], packSlices[1]);
+}
+
+for (const effectName of [
+  "supernova",
+  "sierpinski",
+  "fold",
+  "cantor",
+  "flow",
+  "moire",
+]) {
+  for (const cueTimeMs of [0, 713, 2400, 5199, 9876]) {
+    for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex += 1) {
+      const { intensity } = sampleEffect(
+        effectName,
+        pixelIndex,
+        pixelCount,
+        cueTimeMs,
+        palette,
+        4,
+      );
+      assert.equal(intensity >= ACTIVE_EFFECT_MINIMUMS[effectName], true);
+    }
+  }
+}
+
+for (const effectName of ["flow", "moire"]) {
+  const frames = [0, 1200].map((cueTimeMs) =>
+    Array.from({ length: pixelCount }, (_, pixelIndex) =>
+      sampleEffect(effectName, pixelIndex, pixelCount, cueTimeMs, palette, 2),
+    ),
+  );
+  assert.notDeepEqual(frames[0], frames[1]);
+  assert.equal(
+    new Set(frames[0].map(({ rgb }) => rgb.join(","))).size > 4,
+    true,
+  );
 }
 
 for (const vector of vectors.cases) {
