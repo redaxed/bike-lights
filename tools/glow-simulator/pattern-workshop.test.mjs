@@ -135,9 +135,12 @@ const indexHtml = readFileSync(
   new URL("./index.html", import.meta.url),
   "utf8",
 );
-const scriptOrder = ["effects.js", "pattern-workshop.js", "simulator.js"].map(
-  (source) => indexHtml.indexOf(`src="${source}"`),
-);
+const scriptOrder = [
+  "effects.js",
+  "pattern-workshop.js",
+  "mast-model.js",
+  "simulator.js",
+].map((source) => indexHtml.indexOf(`src="${source}"`));
 assert.equal(
   scriptOrder.every((position) => position >= 0),
   true,

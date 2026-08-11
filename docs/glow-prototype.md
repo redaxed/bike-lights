@@ -6,7 +6,7 @@ This repository is based on Meshtastic tag `v2.7.26.54e0d8d` and targets the Pla
 
 No custom LED firmware is enabled yet. Stock Meshtastic remains the acceptance-test firmware until the board passes the hardware checklist below.
 
-The browser-based [pack simulator](../tools/glow-simulator/) previews the planned patterns, pack targeting, and synchronized versus staggered phase without hardware. Its renderer-independent [effect kernel](../tools/glow-simulator/effects.js) already uses stable effect IDs, integer cue time, LED index/count, and deterministic output so the same fixed-time vectors can be carried into the native firmware tests.
+The browser-based [pack simulator](../tools/glow-simulator/) previews the planned patterns, pack targeting, synchronized versus staggered phase, and four physical mast constructions without hardware. The current spiral model uses 200 LEDs over 3.33 m, wrapped around a 25 mm diameter core through a 1.58 m lit height; opal-sleeve and 65 mm pool-noodle views add estimated diffusion for comparison. Its renderer-independent [effect kernel](../tools/glow-simulator/effects.js) already uses stable effect IDs, integer cue time, LED index/count, and deterministic output so the same fixed-time vectors can be carried into the native firmware tests.
 
 ## Safety boundary
 

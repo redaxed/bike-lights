@@ -1,6 +1,7 @@
 const simulatorEffects = globalThis.glowEffects.effects;
 const simulatorSampleEffect = globalThis.glowEffects.sampleEffect;
 const patternWorkshop = globalThis.glowPatternWorkshop;
+const mastModel = globalThis.glowMastModel;
 
 const canvas = document.getElementById("pack-canvas");
 const context = canvas.getContext("2d", { alpha: false });
@@ -71,6 +72,9 @@ const state = {
   speed: 1,
   bikeVariation: 0.35,
   synchronized: true,
+  hardwareMode: "noodle",
+  foamColor: "white",
+  foamTransmission: 0.18,
   paused: false,
   simulationTime: 0,
   view: "rear",
@@ -564,7 +568,7 @@ function drawBike(bike, bikes, basis) {
     basis,
   );
 
-  drawLightStrip(workingBike, bike, bikes, basis);
+  drawLightMast(workingBike, bike, bikes, basis);
 
   if (bike.lead) {
     const labelPoint = project(worldPoint(workingBike, 0, 2.64, 0.18), basis);
@@ -577,31 +581,135 @@ function drawBike(bike, bikes, basis) {
   }
 }
 
-function drawLightStrip(workingBike, originalBike, bikes, basis) {
-  const pixelCount = 24;
+function rgbCss(rgb, alpha = 1) {
+  const channels = rgb.map((channel) =>
+    Math.round(Math.max(0, Math.min(255, channel))),
+  );
+  return `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${alpha})`;
+}
+
+function mixRgb(first, second, amount) {
+  return first.map(
+    (channel, index) => channel + (second[index] - channel) * amount,
+  );
+}
+
+function drawScreenLine(
+  start,
+  end,
+  widthPx,
+  color,
+  alpha,
+  composite,
+  lineCap = "round",
+) {
+  context.save();
+  context.globalCompositeOperation = composite;
+  context.globalAlpha = alpha;
+  context.strokeStyle = color;
+  context.lineWidth = widthPx;
+  context.lineCap = lineCap;
+  context.beginPath();
+  context.moveTo(start.x, start.y);
+  context.lineTo(end.x, end.y);
+  context.stroke();
+  context.restore();
+}
+
+function drawLightMast(workingBike, originalBike, bikes, basis) {
+  const profile = mastModel.profile(state.hardwareMode);
+  if (profile.diffuser === "none") {
+    drawBareEmitters(workingBike, originalBike, bikes, basis, profile);
+    return;
+  }
+  drawDiffusedMast(workingBike, originalBike, bikes, basis, profile);
+}
+
+function mastWorldPoint(workingBike, geometry) {
+  return worldPoint(
+    workingBike,
+    lightMast.x + geometry.xM,
+    lightMast.lightBottomY + geometry.heightM,
+    lightMast.z + geometry.zM,
+  );
+}
+
+function drawBareEmitters(workingBike, originalBike, bikes, basis, profile) {
   const targeted = targetMatches(originalBike, bikes);
-  for (let index = 0; index < pixelCount; index += 1) {
-    const progress = index / (pixelCount - 1);
-    const y =
-      lightMast.lightBottomY +
-      progress * (lightMast.lightTopY - lightMast.lightBottomY);
-    const point = project(
-      worldPoint(workingBike, lightMast.x, y, lightMast.z - 0.025),
-      basis,
+  const midpoint = project(
+    worldPoint(
+      workingBike,
+      lightMast.x,
+      (lightMast.lightBottomY + lightMast.lightTopY) / 2,
+      lightMast.z,
+    ),
+    basis,
+  );
+  if (!midpoint) return;
+
+  const sampleCount = mastModel.renderSampleCount(
+    state.hardwareMode,
+    midpoint.depth,
+  );
+  const samples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
+    const physicalIndex = mastModel.physicalIndex(
+      sampleIndex,
+      sampleCount,
+      profile.ledCount,
     );
+    const geometry = mastModel.ledPoint(
+      state.hardwareMode,
+      physicalIndex,
+      profile.ledCount,
+    );
+    const world = mastWorldPoint(workingBike, geometry);
+    return {
+      geometry,
+      physicalIndex,
+      point: project(world, basis),
+      world,
+    };
+  });
+
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1].point;
+    const current = samples[index].point;
+    if (!previous || !current) continue;
+    drawScreenLine(
+      previous,
+      current,
+      Math.max(0.35, ((previous.scale + current.scale) / 2) * 0.003),
+      "#4b5566",
+      0.58,
+      "source-over",
+    );
+  }
+
+  for (const sample of samples) {
+    const { geometry, physicalIndex, point, world } = sample;
     if (!point) continue;
 
     const { rgb, intensity } = lightSample(
-      index,
-      pixelCount,
+      physicalIndex,
+      profile.ledCount,
       originalBike.index,
       targeted,
     );
     const [red, green, blue] = rgb;
-    const coreRadius = Math.max(0.8, Math.min(4.2, point.scale * 0.018));
-    const glowRadius = coreRadius * (2.8 + intensity * 2.6);
+    const outward = {
+      x: Math.cos(geometry.angle),
+      y: 0,
+      z: Math.sin(geometry.angle),
+    };
+    const facing = Math.max(
+      0,
+      dot(outward, normalize(subtract(basis.position, world))),
+    );
+    const visibleIntensity = intensity * (0.16 + facing * 0.84);
+    const coreRadius = Math.max(0.42, Math.min(1.8, point.scale * 0.0048));
+    const glowRadius = coreRadius * (2.8 + visibleIntensity * 3.8);
 
-    if (intensity > 0.055) {
+    if (visibleIntensity > 0.04) {
       context.globalCompositeOperation = "lighter";
       const glow = context.createRadialGradient(
         point.x,
@@ -613,11 +721,11 @@ function drawLightStrip(workingBike, originalBike, bikes, basis) {
       );
       glow.addColorStop(
         0,
-        `rgba(${red}, ${green}, ${blue}, ${Math.min(0.82, intensity * 0.78)})`,
+        `rgba(${red}, ${green}, ${blue}, ${Math.min(0.82, visibleIntensity * 0.9)})`,
       );
       glow.addColorStop(
         0.28,
-        `rgba(${red}, ${green}, ${blue}, ${intensity * 0.35})`,
+        `rgba(${red}, ${green}, ${blue}, ${visibleIntensity * 0.4})`,
       );
       glow.addColorStop(1, `rgba(${red}, ${green}, ${blue}, 0)`);
       context.fillStyle = glow;
@@ -627,10 +735,187 @@ function drawLightStrip(workingBike, originalBike, bikes, basis) {
       context.globalCompositeOperation = "source-over";
     }
 
-    context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${Math.max(0.18, intensity)})`;
+    context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${Math.max(0.18, visibleIntensity)})`;
     context.beginPath();
     context.arc(point.x, point.y, coreRadius, 0, Math.PI * 2);
     context.fill();
+  }
+}
+
+function blurredLightSample(centerIndex, profile, bikeIndex, targeted) {
+  const offsets = [-2, -1, 0, 1, 2];
+  const weights = [1, 2, 3, 2, 1];
+  const color = [0, 0, 0];
+  let intensity = 0;
+  let totalWeight = 0;
+
+  offsets.forEach((offset, index) => {
+    const physicalIndex = Math.max(
+      0,
+      Math.min(profile.ledCount - 1, centerIndex + offset),
+    );
+    const sample = lightSample(
+      physicalIndex,
+      profile.ledCount,
+      bikeIndex,
+      targeted,
+    );
+    const weight = weights[index];
+    color[0] += sample.rgb[0] * sample.intensity * weight;
+    color[1] += sample.rgb[1] * sample.intensity * weight;
+    color[2] += sample.rgb[2] * sample.intensity * weight;
+    intensity += sample.intensity * weight;
+    totalWeight += weight;
+  });
+
+  const averageIntensity = intensity / totalWeight;
+  if (intensity <= 0.001) return { rgb: [24, 29, 38], intensity: 0 };
+  return {
+    rgb: color.map((channel) => channel / intensity),
+    intensity: averageIntensity,
+  };
+}
+
+function drawDiffusedMast(workingBike, originalBike, bikes, basis, profile) {
+  const targeted = targetMatches(originalBike, bikes);
+  const foam = mastModel.foamPreset(state.foamColor);
+  const baseRgb = profile.diffuser === "foam" ? foam.baseRgb : [224, 232, 238];
+  const baseStart = project(
+    worldPoint(workingBike, lightMast.x, lightMast.lightBottomY, lightMast.z),
+    basis,
+  );
+  const baseEnd = project(
+    worldPoint(workingBike, lightMast.x, lightMast.lightTopY, lightMast.z),
+    basis,
+  );
+  if (!baseStart || !baseEnd) return;
+
+  const tubeWidth = Math.max(
+    profile.diffuser === "foam" ? 1.5 : 1.1,
+    profile.outerRadiusM * 2 * ((baseStart.scale + baseEnd.scale) / 2),
+  );
+  drawScreenLine(
+    baseStart,
+    baseEnd,
+    tubeWidth,
+    rgbCss(baseRgb),
+    profile.diffuser === "foam" ? 0.5 : 0.32,
+    "source-over",
+  );
+  drawScreenLine(
+    baseStart,
+    baseEnd,
+    Math.max(0.55, tubeWidth * 0.42),
+    rgbCss(mixRgb(baseRgb, [255, 255, 255], 0.22)),
+    0.16,
+    "source-over",
+  );
+
+  const minimumSampleCount = mastModel.renderSampleCount(
+    state.hardwareMode,
+    (baseStart.depth + baseEnd.depth) / 2,
+  );
+  const projectedLength = Math.hypot(
+    baseEnd.x - baseStart.x,
+    baseEnd.y - baseStart.y,
+  );
+  const sampleCount = Math.min(
+    profile.ledCount,
+    Math.max(minimumSampleCount, Math.ceil(projectedLength / 3)),
+  );
+  const segmentCount = sampleCount - 1;
+  for (let index = 0; index < segmentCount; index += 1) {
+    const startProgress = index / segmentCount;
+    const endProgress = (index + 1) / segmentCount;
+    const start = project(
+      worldPoint(
+        workingBike,
+        lightMast.x,
+        lightMast.lightBottomY + startProgress * profile.heightM,
+        lightMast.z,
+      ),
+      basis,
+    );
+    const end = project(
+      worldPoint(
+        workingBike,
+        lightMast.x,
+        lightMast.lightBottomY + endProgress * profile.heightM,
+        lightMast.z,
+      ),
+      basis,
+    );
+    if (!start || !end) continue;
+
+    const physicalIndex = mastModel.physicalIndex(
+      index,
+      segmentCount,
+      profile.ledCount,
+    );
+    const sample = blurredLightSample(
+      physicalIndex,
+      profile,
+      originalBike.index,
+      targeted,
+    );
+    const transmitted =
+      profile.diffuser === "foam"
+        ? mastModel.applyFoamTransmission(
+            sample.rgb,
+            state.foamColor,
+            state.foamTransmission,
+          )
+        : sample.rgb.map((channel) => channel * profile.transmission);
+    const exposed = transmitted.map((channel) => Math.min(255, channel * 3.4));
+    const color = mixRgb(
+      baseRgb,
+      exposed,
+      Math.min(0.92, 0.22 + sample.intensity * 0.86),
+    );
+    const calibrationGain =
+      profile.diffuser === "foam"
+        ? state.foamTransmission / foam.transmission
+        : 1;
+    const backContribution =
+      profile.diffuser === "foam"
+        ? foam.backContribution
+        : profile.backContribution;
+    const diffuseIntensity =
+      sample.intensity *
+      Math.min(1.55, calibrationGain) *
+      (0.7 + backContribution * 0.5);
+    const depth = (start.depth + end.depth) / 2;
+    const bloom = depth > 25 ? 0.8 : depth > 12 ? 0.55 : 0.35;
+
+    if (diffuseIntensity > 0.04) {
+      drawScreenLine(
+        start,
+        end,
+        tubeWidth * (1.55 + bloom * 1.4),
+        rgbCss(exposed),
+        Math.min(0.42, diffuseIntensity * 0.32),
+        "lighter",
+        "butt",
+      );
+    }
+    drawScreenLine(
+      start,
+      end,
+      tubeWidth,
+      rgbCss(color),
+      Math.min(0.9, 0.2 + diffuseIntensity * 0.72),
+      "source-over",
+      "butt",
+    );
+    drawScreenLine(
+      start,
+      end,
+      Math.max(0.55, tubeWidth * 0.45),
+      rgbCss(exposed),
+      Math.min(0.82, 0.08 + diffuseIntensity * 0.64),
+      "lighter",
+      "butt",
+    );
   }
 }
 
@@ -668,6 +953,16 @@ function paletteLabel() {
   return option?.textContent?.toLowerCase() ?? state.palette;
 }
 
+function hardwareNote(profile) {
+  if (profile.id === "straight") {
+    return `${profile.stripLengthM.toFixed(2)} m strip · 60 LEDs/m · ${profile.ledCount} LEDs`;
+  }
+  const build = `${profile.stripLengthM.toFixed(2)} m strip · ${profile.turns.toFixed(1)} turns · ${Math.round(profile.pitchM * 1000)} mm pitch`;
+  if (profile.id === "opal") return `${build} · 40 mm opal sleeve`;
+  if (profile.id === "noodle") return `${build} · 65 mm foam · 3 A target`;
+  return build;
+}
+
 function updateInterface() {
   const effect =
     state.effect === "workshop" && activeWorkshopPattern
@@ -676,8 +971,16 @@ function updateInterface() {
           label: activeWorkshopPattern.name,
         }
       : simulatorEffects[state.effect];
+  const profile = mastModel.profile(state.hardwareMode);
   document.getElementById("effect-code").textContent = effect.code;
   document.getElementById("cue-name").textContent = effect.label;
+  document.getElementById("hardware-summary").textContent =
+    `${profile.ledCount} LEDs`;
+  document.getElementById("hardware-note").textContent = hardwareNote(profile);
+  document.getElementById("noodle-settings").hidden =
+    state.hardwareMode !== "noodle";
+  document.getElementById("foam-transmission-value").textContent =
+    `${Math.round(state.foamTransmission * 100)}%`;
   document.getElementById("pack-size-value").textContent =
     `${state.packSize} ${state.packSize === 1 ? "bike" : "bikes"}`;
   document.getElementById("brightness-value").textContent =
@@ -689,7 +992,7 @@ function updateInterface() {
   document.getElementById("cue-detail").textContent =
     `${state.packSize} ${state.packSize === 1 ? "bike" : "bikes"} · ${
       state.synchronized ? "synchronized" : "staggered"
-    } · ${paletteLabel()}${
+    } · ${paletteLabel()} · ${profile.shortLabel.toLowerCase()}${
       state.effect === "workshop" && state.bikeVariation > 0
         ? ` · ${Math.round(state.bikeVariation * 100)}% bike variation`
         : ""
@@ -706,6 +1009,12 @@ function updateInterface() {
 
   document.querySelectorAll("[data-view]").forEach((button) => {
     const active = button.dataset.view === state.view;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+
+  document.querySelectorAll("[data-hardware]").forEach((button) => {
+    const active = button.dataset.hardware === state.hardwareMode;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
   });
@@ -885,7 +1194,8 @@ function openWorkshop() {
   workshopElements.panel.hidden = false;
   workshopElements.canvasWrap.classList.add("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "true");
-  workshopElements.body.focus();
+  workshopElements.panel.scrollTop = 0;
+  workshopElements.close.focus({ preventScroll: true });
   window.requestAnimationFrame(resizeCanvas);
 }
 
@@ -1033,6 +1343,13 @@ document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => selectView(button.dataset.view));
 });
 
+document.querySelectorAll("[data-hardware]").forEach((button) => {
+  button.addEventListener("click", () => {
+    state.hardwareMode = button.dataset.hardware;
+    updateInterface();
+  });
+});
+
 workshopElements.open.addEventListener("click", openWorkshop);
 workshopElements.close.addEventListener("click", closeWorkshop);
 workshopElements.run.addEventListener("click", () =>
@@ -1071,6 +1388,22 @@ workshopElements.body.addEventListener("keydown", (event) => {
   window.clearTimeout(workshopPreviewTimer);
   applyWorkshopPreview({ reviewApproved: true });
 });
+
+document.getElementById("foam-color").addEventListener("change", (event) => {
+  state.foamColor = event.target.value;
+  state.foamTransmission = mastModel.foamPreset(state.foamColor).transmission;
+  document.getElementById("foam-transmission").value = String(
+    Math.round(state.foamTransmission * 100),
+  );
+  updateInterface();
+});
+
+document
+  .getElementById("foam-transmission")
+  .addEventListener("input", (event) => {
+    state.foamTransmission = Number(event.target.value) / 100;
+    updateInterface();
+  });
 
 document
   .getElementById("palette-select")
@@ -1183,6 +1516,7 @@ requestAnimationFrame(frame);
 
 globalThis.glowSimulator = {
   effects: simulatorEffects,
+  mast: mastModel,
   sampleEffect: simulatorSampleEffect,
   state,
   selectEffect,

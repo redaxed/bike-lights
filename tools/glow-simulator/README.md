@@ -41,7 +41,18 @@ This self-contained browser simulator previews thirty-six effects for the GlowMo
 | 34  | `PIXEL_BLOOM`        | Expanding procedural light petals |
 | 35  | `HEAT_MIRAGE`        | Noise-warped shimmering bands     |
 
-It renders a lightweight three-dimensional bicycle pack with rear-mounted vertical LED strips, without external JavaScript dependencies. Controls adjust pack size, target selection, palette, brightness, effect speed, synchronization, and camera position. The built-in Pattern workshop lets a rider edit and preview a custom renderer without changing repository files.
+It renders a lightweight three-dimensional bicycle pack with rear-mounted light masts, without external JavaScript dependencies. Controls adjust mast construction, pack size, target selection, palette, brightness, effect speed, synchronization, and camera position. The built-in Pattern workshop lets a rider edit and preview a custom renderer without changing repository files.
+
+## Mast model
+
+The mast selector compares four constructions using the intended 60 LEDs/m strip:
+
+- **Straight** uses 95 LEDs over the 1.58 m lit height.
+- **Bare spiral** wraps 200 LEDs / 3.33 m around a 25 mm diameter core in about 37.4 turns with 42 mm pitch.
+- **Opal spiral** renders that helix through a 40 mm opal sleeve.
+- **Pool noodle** adds a 65 mm closed-cell foam body and hides the individual emitters behind longitudinal and circumferential diffusion.
+
+White foam starts at an artistic 18% transmission estimate. Natural, red, green, and blue presets model the strong color filtering expected from foam, and the transmission slider exists so a photographed physical sample can calibrate the preview. The pool-noodle view is deliberately a comparative visualization, not a claim about measured photometry. [`mast-model.js`](mast-model.js) owns the physical dimensions, level-of-detail sampling, and foam presets independently from the renderer.
 
 ## Run locally
 
@@ -80,5 +91,6 @@ Run the host-side deterministic checks with:
 
 ```bash
 node tools/glow-simulator/effects.test.mjs
+node tools/glow-simulator/mast-model.test.mjs
 node tools/glow-simulator/pattern-workshop.test.mjs
 ```

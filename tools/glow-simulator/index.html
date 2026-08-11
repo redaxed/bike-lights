@@ -55,6 +55,89 @@
             </label>
           </section>
 
+          <section class="control-section hardware-section">
+            <div class="section-heading">
+              <div>
+                <h2>Mast build</h2>
+                <p class="pattern-count">Compare the real LED stack</p>
+              </div>
+              <span id="hardware-summary">200 LEDS</span>
+            </div>
+            <div
+              class="hardware-mode-grid"
+              role="group"
+              aria-label="Light mast construction"
+            >
+              <button
+                class="hardware-button"
+                type="button"
+                data-hardware="straight"
+                aria-pressed="false"
+              >
+                <strong>Straight</strong>
+                <small>95 LEDs</small>
+              </button>
+              <button
+                class="hardware-button"
+                type="button"
+                data-hardware="spiral"
+                aria-pressed="false"
+              >
+                <strong>Bare spiral</strong>
+                <small>200 dots</small>
+              </button>
+              <button
+                class="hardware-button"
+                type="button"
+                data-hardware="opal"
+                aria-pressed="false"
+              >
+                <strong>Opal spiral</strong>
+                <small>40 mm sleeve</small>
+              </button>
+              <button
+                class="hardware-button is-active"
+                type="button"
+                data-hardware="noodle"
+                aria-pressed="true"
+              >
+                <strong>Pool noodle</strong>
+                <small>65 mm foam</small>
+              </button>
+            </div>
+            <div id="noodle-settings" class="noodle-settings">
+              <label class="field-label" for="foam-color">
+                Foam
+                <select id="foam-color">
+                  <option value="white" selected>White</option>
+                  <option value="natural">Natural / translucent</option>
+                  <option value="red">Red</option>
+                  <option value="green">Green</option>
+                  <option value="blue">Blue</option>
+                </select>
+              </label>
+              <label class="transmission-field" for="foam-transmission">
+                <span>
+                  <strong>Light transmission</strong>
+                  <output id="foam-transmission-value" for="foam-transmission"
+                    >18%</output
+                  >
+                </span>
+                <input
+                  id="foam-transmission"
+                  type="range"
+                  min="5"
+                  max="45"
+                  value="18"
+                  step="1"
+                />
+              </label>
+            </div>
+            <p id="hardware-note" class="hardware-note">
+              3.33 m strip · 37.4 turns · 42 mm pitch · 3 A target
+            </p>
+          </section>
+
           <section class="control-section">
             <div class="section-heading">
               <div>
@@ -817,6 +900,7 @@
 
     <script src="effects.js"></script>
     <script src="pattern-workshop.js"></script>
+    <script src="mast-model.js"></script>
     <script src="simulator.js"></script>
   </body>
 </html>
