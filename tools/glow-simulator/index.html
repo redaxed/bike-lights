@@ -24,9 +24,20 @@
             <h1>Pack light simulator</h1>
           </div>
         </div>
-        <div class="simulation-state" aria-live="polite">
-          <span class="live-dot" aria-hidden="true"></span>
-          <span id="simulation-status">Live simulation</span>
+        <div class="topbar-actions">
+          <button
+            id="open-workshop"
+            class="workshop-launch"
+            type="button"
+            aria-controls="pattern-workshop"
+            aria-expanded="false"
+          >
+            Create pattern
+          </button>
+          <div class="simulation-state" aria-live="polite">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="simulation-status">Live simulation</span>
+          </div>
         </div>
       </header>
 
@@ -617,6 +628,155 @@
               <span id="cue-detail">9 bikes · synchronized · neon dusk</span>
             </div>
             <div class="interaction-hint">Drag to orbit · scroll to zoom</div>
+
+            <section
+              id="pattern-workshop"
+              class="pattern-workshop"
+              aria-labelledby="workshop-title"
+              hidden
+            >
+              <header class="workshop-header">
+                <div>
+                  <p class="eyebrow">Live creator</p>
+                  <h2 id="workshop-title">Pattern workshop</h2>
+                  <p>
+                    Edit one render function, preview it on the pack, then send
+                    the JSON file to Dax.
+                  </p>
+                </div>
+                <button
+                  id="close-workshop"
+                  class="workshop-close"
+                  type="button"
+                  aria-label="Close pattern workshop"
+                >
+                  ×
+                </button>
+              </header>
+
+              <div class="workshop-fields">
+                <label class="field-label" for="workshop-template">
+                  Starter
+                  <select id="workshop-template">
+                    <option value="aurora">Aurora loom</option>
+                    <option value="orbit">Orbit weave</option>
+                    <option value="prism">Prism engine</option>
+                    <option value="custom">Custom / imported</option>
+                  </select>
+                </label>
+                <label class="field-label" for="pattern-author">
+                  Your name
+                  <input
+                    id="pattern-author"
+                    type="text"
+                    maxlength="64"
+                    autocomplete="name"
+                    placeholder="Optional"
+                  />
+                </label>
+                <label class="field-label" for="pattern-name">
+                  Pattern name
+                  <input id="pattern-name" type="text" maxlength="64" />
+                </label>
+                <label class="field-label" for="pattern-code">
+                  Pattern code
+                  <input
+                    id="pattern-code"
+                    type="text"
+                    maxlength="48"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                  />
+                </label>
+              </div>
+
+              <label class="code-field" for="pattern-body">
+                <span>
+                  <strong>render()</strong>
+                  <small>⌘/Ctrl + Enter to preview</small>
+                </span>
+                <textarea
+                  id="pattern-body"
+                  rows="14"
+                  maxlength="12000"
+                  autocapitalize="off"
+                  autocomplete="off"
+                  spellcheck="false"
+                ></textarea>
+              </label>
+
+              <details class="workshop-reference">
+                <summary>Inputs and helper functions</summary>
+                <p>
+                  Inputs: <code>pixel</code>, <code>count</code>,
+                  <code>x</code> (0–1), <code>time</code> (seconds),
+                  <code>timeMs</code>, <code>bike</code>, <code>palette</code>,
+                  and <code>helpers</code>.
+                </p>
+                <p>
+                  Helpers: <code>wave</code>, <code>triangle</code>,
+                  <code>pulse</code>, <code>noise</code>, <code>gradient</code>,
+                  <code>hsv</code>, <code>mix</code>, <code>rgb</code>,
+                  <code>clamp</code>, <code>smoothstep</code>, basic math, and
+                  <code>TAU</code>.
+                </p>
+              </details>
+
+              <div
+                id="workshop-status"
+                class="workshop-status"
+                data-state="ready"
+                role="status"
+                aria-live="polite"
+              >
+                <strong id="workshop-status-title">Ready to edit</strong>
+                <span id="workshop-status-detail"
+                  >Changes preview automatically when valid.</span
+                >
+              </div>
+
+              <div class="workshop-metrics" aria-label="Pattern checks">
+                <span>Floor <strong id="metric-floor">—</strong></span>
+                <span>Colors <strong id="metric-colors">—</strong></span>
+                <span>Motion <strong id="metric-motion">—</strong></span>
+              </div>
+
+              <div class="workshop-actions">
+                <button
+                  id="run-pattern"
+                  class="workshop-button workshop-button-primary"
+                  type="button"
+                >
+                  Run preview
+                </button>
+                <button id="copy-pattern" class="workshop-button" type="button">
+                  Copy JSON
+                </button>
+                <button
+                  id="download-pattern"
+                  class="workshop-button"
+                  type="button"
+                >
+                  Download
+                </button>
+                <label
+                  class="workshop-button workshop-file"
+                  for="import-pattern"
+                >
+                  Import
+                  <input
+                    id="import-pattern"
+                    class="sr-only"
+                    type="file"
+                    accept=".json,application/json"
+                  />
+                </label>
+              </div>
+              <p class="workshop-safety">
+                Imported code stays local. Review it before running; only open
+                pattern files from people you trust.
+              </p>
+            </section>
           </div>
 
           <div class="scene-footer">
@@ -632,6 +792,7 @@
     </main>
 
     <script src="effects.js"></script>
+    <script src="pattern-workshop.js"></script>
     <script src="simulator.js"></script>
   </body>
 </html>

@@ -1,8 +1,10 @@
 const simulatorEffects = globalThis.glowEffects.effects;
 const simulatorSampleEffect = globalThis.glowEffects.sampleEffect;
+const patternWorkshop = globalThis.glowPatternWorkshop;
 
 const canvas = document.getElementById("pack-canvas");
 const context = canvas.getContext("2d", { alpha: false });
+const workshopReviewGate = patternWorkshop.createReviewGate();
 
 const palettes = {
   safety: [
@@ -81,6 +83,10 @@ let lastRenderAt = 0;
 let activePointer = null;
 let dragStart = null;
 let camera = createCamera(viewPresets.rear);
+let activeWorkshopPattern = null;
+let activeWorkshopRenderer = null;
+let workshopPreviewTimer = null;
+let workshopRuntimeError = null;
 
 const stars = Array.from({ length: 86 }, (_, index) => ({
   x: pseudoRandom(index * 17 + 5),
@@ -233,16 +239,36 @@ function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
   const phaseOffsetMs = state.synchronized ? 0 : bikeIndex * 310;
   const cueTimeMs =
     Math.floor(state.simulationTime * state.speed * 1000) + phaseOffsetMs;
-  const { rgb, intensity } = simulatorSampleEffect(
-    state.effect,
-    pixelIndex,
-    pixelCount,
-    cueTimeMs,
-    palette,
-    bikeIndex,
-  );
+  let sample;
 
-  return { rgb, intensity: intensity * state.brightness };
+  if (state.effect === "workshop" && activeWorkshopRenderer) {
+    try {
+      sample = activeWorkshopRenderer(
+        pixelIndex,
+        pixelCount,
+        cueTimeMs,
+        palette,
+        bikeIndex,
+      );
+    } catch (error) {
+      reportWorkshopRuntimeError(error);
+      sample = { rgb: [255, 72, 108], intensity: 0.18 };
+    }
+  } else {
+    sample = simulatorSampleEffect(
+      state.effect,
+      pixelIndex,
+      pixelCount,
+      cueTimeMs,
+      palette,
+      bikeIndex,
+    );
+  }
+
+  return {
+    rgb: sample.rgb,
+    intensity: sample.intensity * state.brightness,
+  };
 }
 
 function drawBackground() {
@@ -641,7 +667,13 @@ function paletteLabel() {
 }
 
 function updateInterface() {
-  const effect = simulatorEffects[state.effect];
+  const effect =
+    state.effect === "workshop" && activeWorkshopPattern
+      ? {
+          code: activeWorkshopPattern.code,
+          label: activeWorkshopPattern.name,
+        }
+      : simulatorEffects[state.effect];
   document.getElementById("effect-code").textContent = effect.code;
   document.getElementById("cue-name").textContent = effect.label;
   document.getElementById("pack-size-value").textContent =
@@ -682,6 +714,245 @@ function selectEffect(effectName) {
   state.effect = effectName;
   state.simulationTime = 0;
   updateInterface();
+}
+
+const workshopElements = {
+  panel: document.getElementById("pattern-workshop"),
+  open: document.getElementById("open-workshop"),
+  close: document.getElementById("close-workshop"),
+  template: document.getElementById("workshop-template"),
+  author: document.getElementById("pattern-author"),
+  name: document.getElementById("pattern-name"),
+  code: document.getElementById("pattern-code"),
+  body: document.getElementById("pattern-body"),
+  run: document.getElementById("run-pattern"),
+  copy: document.getElementById("copy-pattern"),
+  download: document.getElementById("download-pattern"),
+  import: document.getElementById("import-pattern"),
+  status: document.getElementById("workshop-status"),
+  statusTitle: document.getElementById("workshop-status-title"),
+  statusDetail: document.getElementById("workshop-status-detail"),
+  floor: document.getElementById("metric-floor"),
+  colors: document.getElementById("metric-colors"),
+  motion: document.getElementById("metric-motion"),
+};
+
+function setWorkshopStatus(stateName, title, detail) {
+  workshopElements.status.dataset.state = stateName;
+  workshopElements.statusTitle.textContent = title;
+  workshopElements.statusDetail.textContent = detail;
+}
+
+function clearWorkshopMetrics() {
+  workshopElements.floor.textContent = "—";
+  workshopElements.colors.textContent = "—";
+  workshopElements.motion.textContent = "—";
+}
+
+function workshopDraft() {
+  return patternWorkshop.createPattern({
+    name: workshopElements.name.value,
+    code: workshopElements.code.value,
+    author: workshopElements.author.value,
+    body: workshopElements.body.value,
+    preview: {
+      palette: state.palette,
+      speed: state.speed,
+      brightness: state.brightness,
+    },
+  });
+}
+
+function applyWorkshopPreview({ quiet = false, reviewApproved = false } = {}) {
+  if (workshopReviewGate.isRequired() && !reviewApproved) {
+    setWorkshopStatus(
+      "ready",
+      "Review imported code first",
+      "Press Run preview when you are ready to execute this imported pattern.",
+    );
+    return null;
+  }
+  try {
+    const result = patternWorkshop.analyzePattern(workshopDraft(), {
+      palette: activePalette(),
+    });
+    activeWorkshopPattern = result.pattern;
+    activeWorkshopRenderer = result.renderer;
+    workshopRuntimeError = null;
+    workshopReviewGate.approve();
+    workshopElements.code.value = result.pattern.code;
+    state.effect = "workshop";
+    state.simulationTime = 0;
+    workshopElements.floor.textContent = `${Math.round(
+      result.report.minimumIntensity * 100,
+    )}%`;
+    workshopElements.colors.textContent = String(result.report.uniqueColors);
+    workshopElements.motion.textContent = result.report.moves ? "Yes" : "No";
+
+    if (result.report.warnings.length > 0) {
+      setWorkshopStatus(
+        "warning",
+        quiet ? "Preview updated with notes" : "Pattern runs with notes",
+        result.report.warnings.join(" · "),
+      );
+    } else {
+      setWorkshopStatus(
+        "success",
+        quiet ? "Live preview updated" : "Pattern checks passed",
+        "Deterministic, shifting, colorful, and above the 50% always-on floor.",
+      );
+    }
+    updateInterface();
+    return result;
+  } catch (error) {
+    clearWorkshopMetrics();
+    setWorkshopStatus("error", "Pattern needs a fix", error.message);
+    return null;
+  }
+}
+
+function reportWorkshopRuntimeError(error) {
+  if (workshopRuntimeError === error.message) return;
+  workshopRuntimeError = error.message;
+  setWorkshopStatus("error", "Preview stopped on one frame", error.message);
+}
+
+function scheduleWorkshopPreview() {
+  window.clearTimeout(workshopPreviewTimer);
+  if (workshopReviewGate.isRequired()) {
+    setWorkshopStatus(
+      "ready",
+      "Imported draft waiting for review",
+      "Changes are saved in the editor, but imported code stays inert until Run preview.",
+    );
+    return;
+  }
+  setWorkshopStatus(
+    "ready",
+    "Editing draft",
+    "The preview will update after you pause typing.",
+  );
+  workshopPreviewTimer = window.setTimeout(
+    () => applyWorkshopPreview({ quiet: true }),
+    450,
+  );
+}
+
+function loadWorkshopPattern(
+  pattern,
+  { preserveAuthor = false, preview = false } = {},
+) {
+  workshopElements.name.value = pattern.name;
+  workshopElements.code.value = pattern.code;
+  workshopElements.body.value = pattern.body;
+  if (!preserveAuthor)
+    workshopElements.author.value = String(pattern.author ?? "");
+  clearWorkshopMetrics();
+  if (preview) applyWorkshopPreview();
+}
+
+function loadWorkshopTemplate(templateName, { preview = true } = {}) {
+  const template = patternWorkshop.templates[templateName];
+  if (!template) return;
+  workshopReviewGate.clear();
+  loadWorkshopPattern(template, { preserveAuthor: true, preview });
+}
+
+function openWorkshop() {
+  workshopElements.panel.hidden = false;
+  workshopElements.open.setAttribute("aria-expanded", "true");
+  workshopElements.body.focus();
+}
+
+function closeWorkshop() {
+  workshopElements.panel.hidden = true;
+  workshopElements.open.setAttribute("aria-expanded", "false");
+  workshopElements.open.focus();
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Direct file launches can deny the modern clipboard API.
+    }
+  }
+  const fallback = document.createElement("textarea");
+  fallback.value = text;
+  fallback.setAttribute("readonly", "");
+  fallback.style.position = "fixed";
+  fallback.style.opacity = "0";
+  document.body.append(fallback);
+  fallback.select();
+  const copied = document.execCommand("copy");
+  fallback.remove();
+  if (!copied)
+    throw new Error("Clipboard access was blocked; use Download instead");
+}
+
+async function copyWorkshopPattern() {
+  const result = applyWorkshopPreview();
+  if (!result) return;
+  try {
+    await copyText(patternWorkshop.serializePattern(result.pattern));
+    setWorkshopStatus(
+      "success",
+      "Share JSON copied",
+      "Paste it into a message to Dax or save it as a .glow-pattern.json file.",
+    );
+  } catch (error) {
+    setWorkshopStatus("error", "Could not copy JSON", error.message);
+  }
+}
+
+function downloadWorkshopPattern() {
+  const result = applyWorkshopPreview();
+  if (!result) return;
+  const contents = patternWorkshop.serializePattern(result.pattern);
+  const url = URL.createObjectURL(
+    new Blob([contents], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${result.pattern.code.toLowerCase().replaceAll("_", "-")}.glow-pattern.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  setWorkshopStatus(
+    "success",
+    "Pattern downloaded",
+    `Send ${link.download} to Dax for review and firmware integration.`,
+  );
+}
+
+async function importWorkshopPattern(file) {
+  if (!file) return;
+  if (file.size > 64000) {
+    setWorkshopStatus(
+      "error",
+      "Pattern file is too large",
+      "Files are limited to 64 KB.",
+    );
+    return;
+  }
+  try {
+    const pattern = patternWorkshop.parsePattern(await file.text());
+    workshopElements.template.value = "custom";
+    loadWorkshopPattern(pattern);
+    workshopReviewGate.require();
+    setWorkshopStatus(
+      "ready",
+      `${pattern.name} imported`,
+      "Review the code, then press Run preview. Imported code never runs automatically.",
+    );
+  } catch (error) {
+    setWorkshopStatus("error", "Could not import pattern", error.message);
+  } finally {
+    workshopElements.import.value = "";
+  }
 }
 
 function selectView(viewName) {
@@ -725,6 +996,7 @@ function groupEffectButtons() {
 }
 
 groupEffectButtons();
+loadWorkshopTemplate(workshopElements.template.value, { preview: false });
 
 document.querySelectorAll("[data-effect]").forEach((button) => {
   button.addEventListener("click", () => selectEffect(button.dataset.effect));
@@ -732,6 +1004,41 @@ document.querySelectorAll("[data-effect]").forEach((button) => {
 
 document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => selectView(button.dataset.view));
+});
+
+workshopElements.open.addEventListener("click", openWorkshop);
+workshopElements.close.addEventListener("click", closeWorkshop);
+workshopElements.run.addEventListener("click", () =>
+  applyWorkshopPreview({ reviewApproved: true }),
+);
+workshopElements.copy.addEventListener("click", copyWorkshopPattern);
+workshopElements.download.addEventListener("click", downloadWorkshopPattern);
+workshopElements.import.addEventListener("change", (event) => {
+  importWorkshopPattern(event.target.files?.[0]);
+});
+workshopElements.template.addEventListener("change", (event) => {
+  if (event.target.value !== "custom") loadWorkshopTemplate(event.target.value);
+});
+workshopElements.code.addEventListener("input", () => {
+  workshopElements.code.value = workshopElements.code.value.toUpperCase();
+  workshopElements.template.value = "custom";
+  scheduleWorkshopPreview();
+});
+for (const field of [
+  workshopElements.author,
+  workshopElements.name,
+  workshopElements.body,
+]) {
+  field.addEventListener("input", () => {
+    workshopElements.template.value = "custom";
+    scheduleWorkshopPreview();
+  });
+}
+workshopElements.body.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey)) return;
+  event.preventDefault();
+  window.clearTimeout(workshopPreviewTimer);
+  applyWorkshopPreview({ reviewApproved: true });
 });
 
 document
@@ -828,7 +1135,9 @@ canvas.addEventListener("dblclick", () => {
 window.addEventListener("keydown", (event) => {
   if (
     event.code !== "Space" ||
-    ["INPUT", "SELECT", "BUTTON"].includes(document.activeElement?.tagName)
+    ["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(
+      document.activeElement?.tagName,
+    )
   )
     return;
   event.preventDefault();
@@ -847,4 +1156,10 @@ globalThis.glowSimulator = {
   state,
   selectEffect,
   selectView,
+  workshop: {
+    applyPreview: applyWorkshopPreview,
+    close: closeWorkshop,
+    open: openWorkshop,
+    readDraft: workshopDraft,
+  },
 };

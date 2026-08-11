@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redaxed.github.io/bike-lights/glow-pattern.schema.json",
+  "title": "Dax Glow shareable pattern",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "name", "code", "author", "body"],
+  "properties": {
+    "format": {
+      "const": "dax-glow-pattern"
+    },
+    "version": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,47}$"
+    },
+    "author": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12000
+    },
+    "preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["palette", "speed", "brightness"],
+      "properties": {
+        "palette": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 2
+        },
+        "brightness": {
+          "type": "number",
+          "minimum": 0.05,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}
