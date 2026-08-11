@@ -133,8 +133,9 @@
       name: "Aurora loom",
       code: "AURORA_LOOM",
       body: `const { gradient, noise, wave } = helpers;
-const curtain = wave(x * 2.4 - time * 0.16 + bike * 0.04);
-const shimmer = noise(x * 8 + time * 0.7, bike + 11);
+const offset = variant * variation;
+const curtain = wave(x * 2.4 - time * 0.16 + offset * 0.35);
+const shimmer = noise(x * 8 + time * 0.7 + offset * 1.4, 11);
 
 return {
   color: gradient(palette, curtain * 2.2 + shimmer * 0.7),
@@ -145,8 +146,9 @@ return {
       name: "Orbit weave",
       code: "ORBIT_WEAVE",
       body: `const { gradient, triangle, wave } = helpers;
-const forward = wave(x * 3.2 - time * 0.38 + bike * 0.08);
-const backward = triangle(x * 2.1 + time * 0.27);
+const offset = variant * variation;
+const forward = wave(x * 3.2 - time * 0.38 + offset * 0.45);
+const backward = triangle(x * 2.1 + time * 0.27 - offset * 0.3);
 const weave = forward * 0.58 + backward * 0.42;
 
 return {
@@ -158,8 +160,9 @@ return {
       name: "Prism engine",
       code: "PRISM_ENGINE",
       body: `const { clamp, hsv, sin, TAU, wave } = helpers;
-const bend = sin((x * 1.8 - time * 0.2 + bike * 0.03) * TAU);
-const hue = x * 0.72 + time * 0.09 + bend * 0.12;
+const offset = variant * variation;
+const bend = sin((x * 1.8 - time * 0.2 + offset * 0.25) * TAU);
+const hue = x * 0.72 + time * 0.09 + bend * 0.12 + offset * 0.08;
 
 return {
   color: hsv(hue, 0.78, 1),
@@ -208,6 +211,11 @@ return {
     };
   }
 
+  function variantForBike(bike) {
+    const seed = Math.imul(Math.max(0, Math.trunc(bike)) + 1, 0x9e3779b1);
+    return hashUnit(seed ^ 0x85ebca6b) * 2 - 1;
+  }
+
   function compileBody(body) {
     validateBody(body);
     let render;
@@ -219,6 +227,8 @@ return {
         "time",
         "timeMs",
         "bike",
+        "variant",
+        "variation",
         "palette",
         "helpers",
         `"use strict";\n${body}`,
@@ -227,7 +237,7 @@ return {
       throw new SyntaxError(`Could not compile render body: ${error.message}`);
     }
 
-    return (pixel, count, timeMs, palette, bike = 0) => {
+    return (pixel, count, timeMs, palette, bike = 0, variation = 0) => {
       const x = count > 1 ? pixel / (count - 1) : 0;
       const output = render(
         pixel,
@@ -236,6 +246,8 @@ return {
         timeMs / 1000,
         timeMs,
         bike,
+        variantForBike(bike),
+        clamp(Number(variation) || 0),
         palette,
         helpers,
       );
@@ -274,6 +286,7 @@ return {
         palette: String(value.preview.palette ?? "neon").slice(0, 24),
         speed: clamp(Number(value.preview.speed) || 1, 0.25, 2),
         brightness: clamp(Number(value.preview.brightness) || 0.72, 0.05, 1),
+        variation: clamp(Number(value.preview.variation) || 0),
       };
     }
 
@@ -287,6 +300,9 @@ return {
     const pixelCount = options.pixelCount ?? 24;
     const times = options.times ?? [0, 733, 2197];
     const bikes = options.bikes ?? [0, 3];
+    const variation = clamp(
+      Number(options.variation ?? pattern.preview?.variation) || 0,
+    );
     const colors = new Set();
     let minimumIntensity = 1;
     let maximumIntensity = 0;
@@ -294,8 +310,22 @@ return {
     for (const timeMs of times) {
       for (const bike of bikes) {
         for (let pixel = 0; pixel < pixelCount; pixel += 1) {
-          const first = renderer(pixel, pixelCount, timeMs, palette, bike);
-          const second = renderer(pixel, pixelCount, timeMs, palette, bike);
+          const first = renderer(
+            pixel,
+            pixelCount,
+            timeMs,
+            palette,
+            bike,
+            variation,
+          );
+          const second = renderer(
+            pixel,
+            pixelCount,
+            timeMs,
+            palette,
+            bike,
+            variation,
+          );
           if (JSON.stringify(first) !== JSON.stringify(second))
             throw new TypeError("Pattern output must be deterministic");
           colors.add(first.rgb.join(","));
@@ -306,10 +336,10 @@ return {
     }
 
     const firstFrame = Array.from({ length: pixelCount }, (_, pixel) =>
-      renderer(pixel, pixelCount, times[0], palette, 0),
+      renderer(pixel, pixelCount, times[0], palette, 0, variation),
     );
     const lastFrame = Array.from({ length: pixelCount }, (_, pixel) =>
-      renderer(pixel, pixelCount, times.at(-1), palette, 0),
+      renderer(pixel, pixelCount, times.at(-1), palette, 0, variation),
     );
     const moves = JSON.stringify(firstFrame) !== JSON.stringify(lastFrame);
     const warnings = [];
@@ -380,5 +410,6 @@ return {
     parsePattern,
     serializePattern,
     templates,
+    variantForBike,
   });
 })();

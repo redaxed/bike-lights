@@ -690,6 +690,27 @@
                 </label>
               </div>
 
+              <label class="variation-field" for="bike-variation">
+                <span>
+                  <strong>Per-bike variation</strong>
+                  <output id="bike-variation-value" for="bike-variation"
+                    >35%</output
+                  >
+                </span>
+                <input
+                  id="bike-variation"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="35"
+                  step="5"
+                />
+                <small>
+                  0% keeps every bike identical. Higher values give each bike a
+                  stable offset while the cue stays synchronized.
+                </small>
+              </label>
+
               <label class="code-field" for="pattern-body">
                 <span>
                   <strong>render()</strong>
@@ -710,8 +731,9 @@
                 <p>
                   Inputs: <code>pixel</code>, <code>count</code>,
                   <code>x</code> (0–1), <code>time</code> (seconds),
-                  <code>timeMs</code>, <code>bike</code>, <code>palette</code>,
-                  and <code>helpers</code>.
+                  <code>timeMs</code>, <code>bike</code>, signed
+                  <code>variant</code> (−1 to 1), <code>variation</code> (0–1),
+                  <code>palette</code>, and <code>helpers</code>.
                 </p>
                 <p>
                   Helpers: <code>wave</code>, <code>triangle</code>,

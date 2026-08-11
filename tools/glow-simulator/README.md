@@ -62,9 +62,11 @@ Select **Create pattern**, choose a starter, and edit its `render()` body. The b
 
 - `pixel`, `count`, and normalized strip position `x`
 - cue time as `time` in seconds and `timeMs` in milliseconds
-- `bike`, `palette`, and a constrained `helpers` object
+- `bike`, stable signed `variant` (−1 to 1), `variation` amount (0 to 1), `palette`, and a constrained `helpers` object
 
 It must return `{ color, intensity }`, where `color` is an RGB triplet and `intensity` is normalized from 0 to 1. The helper surface includes deterministic wave, triangle, pulse, noise, palette-gradient, HSV, mixing, clamping, and basic math functions. Browser APIs, dynamic code, loops, timers, and nondeterministic sources are rejected so submissions stay easy to review and portable to firmware.
+
+**Per-bike variation** controls how strongly bikes diverge while staying on the same cue. At 0%, every bike receives `variation === 0`; at higher settings, multiply the stable `variant` by `variation` and use that offset in hue, phase, noise position, or geometry. The same bike always receives the same variant, so the pack remains deterministic and synchronized rather than flickering randomly.
 
 The workshop automatically samples every draft for deterministic output, movement, color variety, and the preferred 50% always-on floor. **Copy JSON** copies the versioned handoff object; **Download** creates a `.glow-pattern.json` file. Send either one to Dax. Imports populate the editor but never execute until **Run preview** is pressed, and imported code should only come from a trusted author.
 

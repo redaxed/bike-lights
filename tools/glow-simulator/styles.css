@@ -1032,6 +1032,43 @@ input[type="range"] {
   gap: 10px;
 }
 
+.variation-field {
+  display: grid;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid #273247;
+  border-radius: 9px;
+  background: rgba(16, 23, 34, 0.7);
+}
+
+.variation-field > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.variation-field strong,
+.variation-field output {
+  color: #cbd7e6;
+  font-size: 0.68rem;
+}
+
+.variation-field output {
+  color: #75e9ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.variation-field input[type="range"] {
+  margin: 0;
+}
+
+.variation-field small {
+  color: #6f7c90;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
 .code-field {
   display: grid;
   gap: 7px;

@@ -69,6 +69,7 @@ const state = {
   packSize: 9,
   brightness: 0.72,
   speed: 1,
+  bikeVariation: 0.35,
   synchronized: true,
   paused: false,
   simulationTime: 0,
@@ -249,6 +250,7 @@ function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
         cueTimeMs,
         palette,
         bikeIndex,
+        state.bikeVariation,
       );
     } catch (error) {
       reportWorkshopRuntimeError(error);
@@ -687,7 +689,11 @@ function updateInterface() {
   document.getElementById("cue-detail").textContent =
     `${state.packSize} ${state.packSize === 1 ? "bike" : "bikes"} · ${
       state.synchronized ? "synchronized" : "staggered"
-    } · ${paletteLabel()}`;
+    } · ${paletteLabel()}${
+      state.effect === "workshop" && state.bikeVariation > 0
+        ? ` · ${Math.round(state.bikeVariation * 100)}% bike variation`
+        : ""
+    }`;
   document.getElementById("simulation-status").textContent = state.paused
     ? "Simulation paused"
     : "Live simulation";
@@ -724,6 +730,8 @@ const workshopElements = {
   author: document.getElementById("pattern-author"),
   name: document.getElementById("pattern-name"),
   code: document.getElementById("pattern-code"),
+  variation: document.getElementById("bike-variation"),
+  variationValue: document.getElementById("bike-variation-value"),
   body: document.getElementById("pattern-body"),
   run: document.getElementById("run-pattern"),
   copy: document.getElementById("copy-pattern"),
@@ -759,6 +767,7 @@ function workshopDraft() {
       palette: state.palette,
       speed: state.speed,
       brightness: state.brightness,
+      variation: state.bikeVariation,
     },
   });
 }
@@ -775,6 +784,7 @@ function applyWorkshopPreview({ quiet = false, reviewApproved = false } = {}) {
   try {
     const result = patternWorkshop.analyzePattern(workshopDraft(), {
       palette: activePalette(),
+      variation: state.bikeVariation,
     });
     activeWorkshopPattern = result.pattern;
     activeWorkshopRenderer = result.renderer;
@@ -840,13 +850,14 @@ function scheduleWorkshopPreview() {
 
 function loadWorkshopPattern(
   pattern,
-  { preserveAuthor = false, preview = false } = {},
+  { applyVariation = false, preserveAuthor = false, preview = false } = {},
 ) {
   workshopElements.name.value = pattern.name;
   workshopElements.code.value = pattern.code;
   workshopElements.body.value = pattern.body;
   if (!preserveAuthor)
     workshopElements.author.value = String(pattern.author ?? "");
+  if (applyVariation) setBikeVariation(Number(pattern.preview?.variation) || 0);
   clearWorkshopMetrics();
   if (preview) applyWorkshopPreview();
 }
@@ -856,6 +867,17 @@ function loadWorkshopTemplate(templateName, { preview = true } = {}) {
   if (!template) return;
   workshopReviewGate.clear();
   loadWorkshopPattern(template, { preserveAuthor: true, preview });
+}
+
+function setBikeVariation(value) {
+  state.bikeVariation = Math.max(0, Math.min(1, value));
+  workshopElements.variation.value = String(
+    Math.round(state.bikeVariation * 100),
+  );
+  workshopElements.variationValue.textContent = `${Math.round(
+    state.bikeVariation * 100,
+  )}%`;
+  updateInterface();
 }
 
 function openWorkshop() {
@@ -941,7 +963,7 @@ async function importWorkshopPattern(file) {
   try {
     const pattern = patternWorkshop.parsePattern(await file.text());
     workshopElements.template.value = "custom";
-    loadWorkshopPattern(pattern);
+    loadWorkshopPattern(pattern, { applyVariation: true });
     workshopReviewGate.require();
     setWorkshopStatus(
       "ready",
@@ -1018,6 +1040,10 @@ workshopElements.import.addEventListener("change", (event) => {
 });
 workshopElements.template.addEventListener("change", (event) => {
   if (event.target.value !== "custom") loadWorkshopTemplate(event.target.value);
+});
+workshopElements.variation.addEventListener("input", (event) => {
+  setBikeVariation(Number(event.target.value) / 100);
+  scheduleWorkshopPreview();
 });
 workshopElements.code.addEventListener("input", () => {
   workshopElements.code.value = workshopElements.code.value.toUpperCase();
