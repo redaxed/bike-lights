@@ -284,49 +284,162 @@ function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
   };
 }
 
+function fillTerrain(points, color) {
+  context.fillStyle = color;
+  context.beginPath();
+  context.moveTo(0, height);
+  for (const [x, y] of points) {
+    context.lineTo(x * width, y * height);
+  }
+  context.lineTo(width, height);
+  context.closePath();
+  context.fill();
+}
+
+function drawCactus(x, groundY, scale) {
+  const plantHeight = height * 0.078 * scale;
+  const trunkWidth = Math.max(2, height * 0.006 * scale);
+
+  context.save();
+  context.strokeStyle = "#120d0c";
+  context.lineWidth = trunkWidth;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(x, groundY);
+  context.lineTo(x, groundY - plantHeight);
+  context.moveTo(x, groundY - plantHeight * 0.52);
+  context.lineTo(x - plantHeight * 0.26, groundY - plantHeight * 0.52);
+  context.lineTo(x - plantHeight * 0.26, groundY - plantHeight * 0.73);
+  context.moveTo(x, groundY - plantHeight * 0.7);
+  context.lineTo(x + plantHeight * 0.24, groundY - plantHeight * 0.7);
+  context.lineTo(x + plantHeight * 0.24, groundY - plantHeight * 0.9);
+  context.stroke();
+  context.restore();
+}
+
 function drawBackground() {
   const sky = context.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, "#060913");
-  sky.addColorStop(0.62, "#10152a");
-  sky.addColorStop(1, "#090d13");
+  sky.addColorStop(0, "#080914");
+  sky.addColorStop(0.48, "#1d1523");
+  sky.addColorStop(0.72, "#63342f");
+  sky.addColorStop(1, "#1d1513");
   context.fillStyle = sky;
   context.fillRect(0, 0, width, height);
 
   for (const star of stars) {
-    context.globalAlpha = star.alpha;
-    context.fillStyle = "#d8e9ff";
+    context.globalAlpha = star.alpha * 0.8;
+    context.fillStyle = "#f8e8d2";
     context.beginPath();
     context.arc(star.x * width, star.y * height, star.size, 0, Math.PI * 2);
     context.fill();
   }
   context.globalAlpha = 1;
 
-  const horizon = height * 0.56;
+  const moonX = width * (width < 620 ? 0.88 : 0.79);
+  const moonY = height * 0.16;
+  const moonRadius = Math.max(12, height * 0.034);
+  const moonGlow = context.createRadialGradient(
+    moonX,
+    moonY,
+    moonRadius * 0.3,
+    moonX,
+    moonY,
+    moonRadius * 4.8,
+  );
+  moonGlow.addColorStop(0, "rgba(255, 218, 170, 0.22)");
+  moonGlow.addColorStop(1, "rgba(255, 194, 132, 0)");
+  context.fillStyle = moonGlow;
+  context.fillRect(
+    moonX - moonRadius * 5,
+    moonY - moonRadius * 5,
+    moonRadius * 10,
+    moonRadius * 10,
+  );
+  context.fillStyle = "#efc994";
+  context.beginPath();
+  context.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "rgba(151, 100, 76, 0.18)";
+  context.beginPath();
+  context.arc(
+    moonX - moonRadius * 0.28,
+    moonY + moonRadius * 0.16,
+    moonRadius * 0.19,
+    0,
+    Math.PI * 2,
+  );
+  context.fill();
+
+  const horizon = height * 0.57;
   const glow = context.createRadialGradient(
-    width * 0.5,
+    width * 0.48,
     horizon,
     0,
-    width * 0.5,
+    width * 0.48,
     horizon,
-    width * 0.52,
+    width * 0.58,
   );
-  glow.addColorStop(0, "rgba(93, 91, 177, 0.18)");
-  glow.addColorStop(1, "rgba(19, 23, 42, 0)");
+  glow.addColorStop(0, "rgba(241, 135, 82, 0.24)");
+  glow.addColorStop(1, "rgba(85, 42, 37, 0)");
   context.fillStyle = glow;
-  context.fillRect(0, height * 0.18, width, height * 0.6);
+  context.fillRect(0, 0, width, height);
 
-  context.fillStyle = "#0b101b";
-  context.beginPath();
-  context.moveTo(0, horizon + 30);
-  for (let index = 0; index <= 16; index += 1) {
-    const x = (index / 16) * width;
-    const y = horizon - 10 - pseudoRandom(index * 73 + 9) * height * 0.09;
-    context.lineTo(x, y);
+  fillTerrain(
+    [
+      [0, 0.58],
+      [0.075, 0.535],
+      [0.12, 0.49],
+      [0.23, 0.49],
+      [0.275, 0.535],
+      [0.37, 0.55],
+      [0.46, 0.505],
+      [0.54, 0.505],
+      [0.61, 0.555],
+      [0.72, 0.53],
+      [0.77, 0.47],
+      [0.88, 0.47],
+      [0.925, 0.525],
+      [1, 0.55],
+    ],
+    "#382022",
+  );
+
+  const desertFloor = context.createLinearGradient(0, horizon, 0, height);
+  desertFloor.addColorStop(0, "#3a241b");
+  desertFloor.addColorStop(0.5, "#241813");
+  desertFloor.addColorStop(1, "#100e0d");
+  context.fillStyle = desertFloor;
+  context.fillRect(0, horizon, width, height - horizon);
+
+  fillTerrain(
+    [
+      [0, 0.66],
+      [0.08, 0.625],
+      [0.18, 0.61],
+      [0.29, 0.635],
+      [0.42, 0.605],
+      [0.56, 0.625],
+      [0.68, 0.6],
+      [0.8, 0.63],
+      [0.91, 0.595],
+      [1, 0.615],
+    ],
+    "#2c1b16",
+  );
+
+  context.fillStyle = "rgba(198, 128, 79, 0.24)";
+  for (let index = 0; index < 38; index += 1) {
+    const x = pseudoRandom(index * 43 + 21) * width;
+    const y = (0.61 + pseudoRandom(index * 67 + 15) * 0.33) * height;
+    const radius = 0.5 + pseudoRandom(index * 31 + 8) * 1.25;
+    context.beginPath();
+    context.ellipse(x, y, radius * 1.8, radius * 0.55, 0, 0, Math.PI * 2);
+    context.fill();
   }
-  context.lineTo(width, height);
-  context.lineTo(0, height);
-  context.closePath();
-  context.fill();
+
+  drawCactus(width * 0.09, height * 0.63, 0.72);
+  drawCactus(width * 0.9, height * 0.61, 0.58);
 }
 
 function drawWorldLine(
