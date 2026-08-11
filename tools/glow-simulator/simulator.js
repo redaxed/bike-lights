@@ -1,4 +1,5 @@
-import { effects, sampleEffect } from "./effects.js";
+const simulatorEffects = globalThis.glowEffects.effects;
+const simulatorSampleEffect = globalThis.glowEffects.sampleEffect;
 
 const canvas = document.getElementById("pack-canvas");
 const context = canvas.getContext("2d", { alpha: false });
@@ -232,7 +233,7 @@ function lightSample(pixelIndex, pixelCount, bikeIndex, isTargeted) {
   const phaseOffsetMs = state.synchronized ? 0 : bikeIndex * 310;
   const cueTimeMs =
     Math.floor(state.simulationTime * state.speed * 1000) + phaseOffsetMs;
-  const { rgb, intensity } = sampleEffect(
+  const { rgb, intensity } = simulatorSampleEffect(
     state.effect,
     pixelIndex,
     pixelCount,
@@ -640,7 +641,7 @@ function paletteLabel() {
 }
 
 function updateInterface() {
-  const effect = effects[state.effect];
+  const effect = simulatorEffects[state.effect];
   document.getElementById("effect-code").textContent = effect.code;
   document.getElementById("cue-name").textContent = effect.label;
   document.getElementById("pack-size-value").textContent =
@@ -677,7 +678,7 @@ function updateInterface() {
 }
 
 function selectEffect(effectName) {
-  if (!effects[effectName]) return;
+  if (!simulatorEffects[effectName]) return;
   state.effect = effectName;
   state.simulationTime = 0;
   updateInterface();
@@ -805,9 +806,9 @@ resizeCanvas();
 updateInterface();
 requestAnimationFrame(frame);
 
-window.glowSimulator = {
-  effects,
-  sampleEffect,
+globalThis.glowSimulator = {
+  effects: simulatorEffects,
+  sampleEffect: simulatorSampleEffect,
   state,
   selectEffect,
   selectView,

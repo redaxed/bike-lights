@@ -23,7 +23,8 @@ It renders a lightweight three-dimensional bicycle pack with rear-mounted vertic
 
 ## Run locally
 
-From the repository root:
+Open [`index.html`](index.html) directly, or serve the directory from the
+repository root:
 
 ```bash
 python3.12 -m http.server 4173 -d tools/glow-simulator

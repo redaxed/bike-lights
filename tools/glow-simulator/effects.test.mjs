@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { effects, sampleEffect } from "./effects.js";
+import "./effects.js";
+
+const { effects, sampleEffect } = globalThis.glowEffects;
 
 const vectors = JSON.parse(
   readFileSync(new URL("./effect-vectors.json", import.meta.url), "utf8"),

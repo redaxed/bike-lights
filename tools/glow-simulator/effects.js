@@ -3,7 +3,7 @@ function effect(id, label, code, periodMs) {
 }
 
 // IDs are append-only so future GlowCue packets can use the same stable mapping.
-export const effects = Object.freeze({
+const effects = Object.freeze({
   off: effect(0, "Off", "OFF", 0),
   solid: effect(1, "Solid", "SOLID", 0),
   wipe: effect(2, "Color wipe", "COLOR_WIPE", 3100),
@@ -111,7 +111,7 @@ function cantorAlive(position, depth) {
  * palette, and an optional pack index. The result is one RGB color plus
  * normalized intensity.
  */
-export function sampleEffect(
+function sampleEffect(
   effectName,
   pixelIndex,
   pixelCount,
@@ -262,3 +262,5 @@ export function sampleEffect(
     intensity: clampUnit(intensity),
   };
 }
+
+globalThis.glowEffects = Object.freeze({ effects, sampleEffect });
