@@ -327,6 +327,251 @@ h2 {
   box-shadow: 0 0 8px rgba(97, 239, 255, 0.3);
 }
 
+.effect-icon-aurora {
+  border-color: transparent;
+  background: linear-gradient(
+    155deg,
+    #202735 8%,
+    #61efff 35%,
+    #7bffab 58%,
+    #9d6cff 86%
+  );
+  box-shadow: 0 0 8px rgba(97, 239, 255, 0.32);
+}
+
+.effect-icon-lava {
+  border-color: transparent;
+  background:
+    radial-gradient(
+      circle at 30% 66%,
+      #ffd45b 0 18%,
+      #ff6d57 22% 35%,
+      transparent 39%
+    ),
+    radial-gradient(
+      circle at 72% 30%,
+      #ff6da7 0 20%,
+      #9d6cff 24% 40%,
+      #202735 44%
+    );
+}
+
+.effect-icon-voronoi {
+  border-color: #61efff;
+  background: conic-gradient(
+    from 20deg at 34% 42%,
+    #ff6da7 0 22%,
+    #202735 0 39%,
+    #61efff 0 64%,
+    #9d6cff 0 82%,
+    #7bffab 0
+  );
+}
+
+.effect-icon-shockwave {
+  border-color: transparent;
+  background: conic-gradient(
+    from 45deg,
+    #202735 0 12.5%,
+    #61efff 0 25%,
+    #202735 0 37.5%,
+    #ff6da7 0 50%,
+    #202735 0 62.5%,
+    #9d6cff 0 75%,
+    #202735 0 87.5%,
+    #61efff 0
+  );
+  box-shadow: 0 0 8px rgba(97, 239, 255, 0.4);
+}
+
+.effect-icon-prism {
+  border-color: transparent;
+  background: conic-gradient(
+    from 225deg at 28% 72%,
+    #ffffff 0 8%,
+    #61efff 10% 24%,
+    #7bffab 26% 38%,
+    #ff6da7 40% 55%,
+    #202735 58%
+  );
+}
+
+.effect-icon-glitch {
+  border-color: transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 22%,
+      #61efff 22% 46%,
+      transparent 46% 68%,
+      #ff6da7 68%
+    ),
+    repeating-linear-gradient(0deg, #202735 0 4px, #9d6cff 4px 7px);
+}
+
+.effect-icon-hyperspace {
+  border-color: transparent;
+  background: repeating-conic-gradient(
+    from 250deg at 12% 50%,
+    #ffffff 0 3deg,
+    #61efff 4deg 8deg,
+    #202735 9deg 17deg
+  );
+  box-shadow: 0 0 9px rgba(97, 239, 255, 0.38);
+}
+
+.effect-icon-caustic {
+  border-color: transparent;
+  background:
+    radial-gradient(
+      ellipse at 32% 35%,
+      transparent 0 22%,
+      #61efff 26% 32%,
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 70% 68%,
+      #202735 0 25%,
+      #7bffab 29% 38%,
+      #9d6cff 43%
+    );
+}
+
+.effect-icon-topographic {
+  border-color: transparent;
+  background: repeating-radial-gradient(
+    ellipse at 30% 65%,
+    #202735 0 2px,
+    #61efff 3px 4px,
+    #9d6cff 5px 7px
+  );
+}
+
+.effect-icon-ripple {
+  border-color: transparent;
+  background: repeating-radial-gradient(
+    circle at 62% 40%,
+    #ffffff 0 1px,
+    #61efff 2px 3px,
+    #202735 4px 6px
+  );
+  box-shadow: 0 0 8px rgba(97, 239, 255, 0.32);
+}
+
+.effect-icon-helix {
+  border-color: transparent;
+  background:
+    repeating-linear-gradient(
+      55deg,
+      transparent 0 4px,
+      #61efff 4px 6px,
+      transparent 6px 9px
+    ),
+    repeating-linear-gradient(
+      -55deg,
+      #202735 0 4px,
+      #ff6da7 4px 6px,
+      #9d6cff 6px 9px
+    );
+}
+
+.effect-icon-crystal {
+  border-color: transparent;
+  background: conic-gradient(
+    from 15deg at 48% 62%,
+    #61efff 0 17%,
+    #202735 0 31%,
+    #9d6cff 0 48%,
+    #7bffab 0 67%,
+    #ff6da7 0 83%,
+    #ffffff 0
+  );
+}
+
+.effect-icon-magnetic {
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 28% 50%, #ff6da7 0 12%, transparent 16%),
+    radial-gradient(circle at 72% 50%, #61efff 0 12%, transparent 16%),
+    repeating-radial-gradient(
+      ellipse,
+      #202735 0 2px,
+      #9d6cff 3px 4px,
+      #202735 5px 7px
+    );
+}
+
+.effect-icon-tectonic {
+  border-color: transparent;
+  background: linear-gradient(
+    125deg,
+    #ff6da7 0 27%,
+    #202735 28% 34%,
+    #61efff 35% 62%,
+    #202735 63% 69%,
+    #9d6cff 70%
+  );
+}
+
+.effect-icon-circuit {
+  border-color: transparent;
+  background:
+    linear-gradient(90deg, transparent 0 25%, #61efff 26% 34%, transparent 35%),
+    linear-gradient(0deg, #202735 0 42%, #ff6da7 43% 51%, #202735 52%);
+  box-shadow: inset 5px 5px 0 -3px #7bffab;
+}
+
+.effect-icon-woven {
+  border-color: transparent;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, #61efff 3px 5px),
+    repeating-linear-gradient(90deg, #202735 0 3px, #ff6da7 3px 5px);
+}
+
+.effect-icon-kaleidoscope {
+  border-color: transparent;
+  background: repeating-conic-gradient(
+    from 20deg,
+    #61efff 0 18deg,
+    #9d6cff 18deg 36deg,
+    #ff6da7 36deg 54deg,
+    #202735 54deg 72deg
+  );
+}
+
+.effect-icon-bitstorm {
+  border-color: transparent;
+  background: conic-gradient(
+      #61efff 25%,
+      #202735 0 50%,
+      #ff6da7 0 75%,
+      #9d6cff 0
+    )
+    0 0 / 6px 6px;
+}
+
+.effect-icon-bloom {
+  border-color: transparent;
+  background: repeating-conic-gradient(
+    from 10deg at 50% 50%,
+    #ff6da7 0 12deg,
+    #61efff 13deg 24deg,
+    #202735 25deg 45deg
+  );
+  box-shadow: 0 0 9px rgba(255, 109, 167, 0.34);
+}
+
+.effect-icon-mirage {
+  border-color: transparent;
+  background: repeating-linear-gradient(
+    165deg,
+    #202735 0 2px,
+    #9d6cff 3px 5px,
+    #61efff 6px 8px,
+    #ff6da7 9px 11px
+  );
+}
+
 .effect-icon-supernova {
   border-color: transparent;
   background:

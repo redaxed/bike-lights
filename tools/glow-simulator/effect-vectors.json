@@ -123,6 +123,166 @@
       "bikeIndex": 2,
       "rgb": [90, 232, 254],
       "intensity": 0.9102
+    },
+    {
+      "effect": "aurora",
+      "pixel": 3,
+      "cueTimeMs": 500,
+      "bikeIndex": 0,
+      "rgb": [111, 211, 240],
+      "intensity": 0.93252
+    },
+    {
+      "effect": "lava",
+      "pixel": 10,
+      "cueTimeMs": 931,
+      "bikeIndex": 1,
+      "rgb": [148, 174, 213],
+      "intensity": 1
+    },
+    {
+      "effect": "voronoi",
+      "pixel": 17,
+      "cueTimeMs": 1362,
+      "bikeIndex": 2,
+      "rgb": [109, 245, 207],
+      "intensity": 0.559723
+    },
+    {
+      "effect": "shockwave",
+      "pixel": 0,
+      "cueTimeMs": 1793,
+      "bikeIndex": 3,
+      "rgb": [93, 234, 247],
+      "intensity": 0.5
+    },
+    {
+      "effect": "prism",
+      "pixel": 7,
+      "cueTimeMs": 2224,
+      "bikeIndex": 4,
+      "rgb": [123, 255, 171],
+      "intensity": 0.860075
+    },
+    {
+      "effect": "glitch",
+      "pixel": 14,
+      "cueTimeMs": 2655,
+      "bikeIndex": 0,
+      "rgb": [252, 71, 139],
+      "intensity": 0.7
+    },
+    {
+      "effect": "hyperspace",
+      "pixel": 21,
+      "cueTimeMs": 3086,
+      "bikeIndex": 1,
+      "rgb": [252, 71, 139],
+      "intensity": 0.720202
+    },
+    {
+      "effect": "caustic",
+      "pixel": 4,
+      "cueTimeMs": 3517,
+      "bikeIndex": 2,
+      "rgb": [119, 252, 181],
+      "intensity": 0.576055
+    },
+    {
+      "effect": "topographic",
+      "pixel": 11,
+      "cueTimeMs": 3948,
+      "bikeIndex": 3,
+      "rgb": [229, 105, 144],
+      "intensity": 0.760318
+    },
+    {
+      "effect": "ripple",
+      "pixel": 18,
+      "cueTimeMs": 4379,
+      "bikeIndex": 4,
+      "rgb": [96, 226, 251],
+      "intensity": 0.92532
+    },
+    {
+      "effect": "helix",
+      "pixel": 1,
+      "cueTimeMs": 4810,
+      "bikeIndex": 0,
+      "rgb": [132, 242, 169],
+      "intensity": 0.840905
+    },
+    {
+      "effect": "crystal",
+      "pixel": 8,
+      "cueTimeMs": 5241,
+      "bikeIndex": 1,
+      "rgb": [253, 70, 138],
+      "intensity": 0.925829
+    },
+    {
+      "effect": "magnetic",
+      "pixel": 15,
+      "cueTimeMs": 5672,
+      "bikeIndex": 2,
+      "rgb": [232, 100, 143],
+      "intensity": 0.961581
+    },
+    {
+      "effect": "tectonic",
+      "pixel": 22,
+      "cueTimeMs": 6103,
+      "bikeIndex": 3,
+      "rgb": [156, 208, 162],
+      "intensity": 0.666649
+    },
+    {
+      "effect": "circuit",
+      "pixel": 5,
+      "cueTimeMs": 6534,
+      "bikeIndex": 4,
+      "rgb": [118, 251, 185],
+      "intensity": 0.9208
+    },
+    {
+      "effect": "woven",
+      "pixel": 12,
+      "cueTimeMs": 6965,
+      "bikeIndex": 0,
+      "rgb": [135, 237, 168],
+      "intensity": 0.846318
+    },
+    {
+      "effect": "kaleidoscope",
+      "pixel": 19,
+      "cueTimeMs": 7396,
+      "bikeIndex": 1,
+      "rgb": [127, 249, 170],
+      "intensity": 0.727157
+    },
+    {
+      "effect": "bitstorm",
+      "pixel": 2,
+      "cueTimeMs": 7827,
+      "bikeIndex": 2,
+      "rgb": [170, 152, 198],
+      "intensity": 0.76
+    },
+    {
+      "effect": "bloom",
+      "pixel": 9,
+      "cueTimeMs": 8258,
+      "bikeIndex": 3,
+      "rgb": [123, 255, 171],
+      "intensity": 0.745275
+    },
+    {
+      "effect": "mirage",
+      "pixel": 16,
+      "cueTimeMs": 8689,
+      "bikeIndex": 4,
+      "rgb": [255, 68, 137],
+      "intensity": 0.808013
     }
   ]
 }

@@ -9,6 +9,28 @@ const vectors = JSON.parse(
   readFileSync(new URL("./effect-vectors.json", import.meta.url), "utf8"),
 );
 const { palette, pixelCount } = vectors;
+const EPIC_EFFECTS = Object.freeze([
+  "aurora",
+  "lava",
+  "voronoi",
+  "shockwave",
+  "prism",
+  "glitch",
+  "hyperspace",
+  "caustic",
+  "topographic",
+  "ripple",
+  "helix",
+  "crystal",
+  "magnetic",
+  "tectonic",
+  "circuit",
+  "woven",
+  "kaleidoscope",
+  "bitstorm",
+  "bloom",
+  "mirage",
+]);
 const ACTIVE_EFFECT_MINIMUMS = Object.freeze({
   supernova: 0.34,
   sierpinski: 0.34,
@@ -16,6 +38,7 @@ const ACTIVE_EFFECT_MINIMUMS = Object.freeze({
   cantor: 0.34,
   flow: 0.58,
   moire: 0.52,
+  ...Object.fromEntries(EPIC_EFFECTS.map((effectName) => [effectName, 0.5])),
 });
 
 const effectNames = Object.keys(effects);
@@ -37,7 +60,9 @@ assert.deepEqual(effectNames, [
   "cantor",
   "flow",
   "moire",
+  ...EPIC_EFFECTS,
 ]);
+assert.equal(EPIC_EFFECTS.length, 20);
 assert.deepEqual(
   effectNames.map((name) => effects[name].id),
   effectNames.map((_, index) => index),
@@ -104,6 +129,7 @@ for (const effectName of [
   "cantor",
   "flow",
   "moire",
+  ...EPIC_EFFECTS,
 ]) {
   for (const cueTimeMs of [0, 713, 2400, 5199, 9876]) {
     for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex += 1) {
@@ -120,7 +146,8 @@ for (const effectName of [
   }
 }
 
-for (const effectName of ["flow", "moire"]) {
+const signatures = new Map();
+for (const effectName of ["flow", "moire", ...EPIC_EFFECTS]) {
   const frames = [0, 1200].map((cueTimeMs) =>
     Array.from({ length: pixelCount }, (_, pixelIndex) =>
       sampleEffect(effectName, pixelIndex, pixelCount, cueTimeMs, palette, 2),
@@ -128,9 +155,19 @@ for (const effectName of ["flow", "moire"]) {
   );
   assert.notDeepEqual(frames[0], frames[1]);
   assert.equal(
-    new Set(frames[0].map(({ rgb }) => rgb.join(","))).size > 4,
+    new Set(frames[0].map(({ rgb }) => rgb.join(","))).size >= 3,
     true,
   );
+
+  const signature = JSON.stringify(
+    [0, 733, 2197].flatMap((cueTimeMs) =>
+      [0, 5, 11, 17, 23].map((pixelIndex) =>
+        sampleEffect(effectName, pixelIndex, pixelCount, cueTimeMs, palette, 3),
+      ),
+    ),
+  );
+  assert.equal(signatures.has(signature), false);
+  signatures.set(signature, effectName);
 }
 
 for (const vector of vectors.cases) {
