@@ -107,6 +107,15 @@ const stars = Array.from({ length: 86 }, (_, index) => ({
   alpha: 0.18 + pseudoRandom(index * 53 + 3) * 0.52,
 }));
 
+const roadTravelSpeed = 7;
+const desertSceneryLoop = 64;
+const roadsideScenery = Array.from({ length: 20 }, (_, index) => ({
+  kind: index % 4 === 0 ? "cactus" : index % 3 === 0 ? "scrub" : "rock",
+  x: (index % 2 === 0 ? -1 : 1) * (5.2 + pseudoRandom(index * 47 + 19) * 2.8),
+  z: 2 + index * 3.1,
+  scale: 0.72 + pseudoRandom(index * 37 + 23) * 0.72,
+}));
+
 function pseudoRandom(seed) {
   const value = Math.sin(seed * 12.9898) * 43758.5453;
   return value - Math.floor(value);
@@ -442,6 +451,146 @@ function drawBackground() {
   drawCactus(width * 0.9, height * 0.61, 0.58);
 }
 
+function sceneryAlpha(z) {
+  return 0.28 + (1 - z / desertSceneryLoop) * 0.68;
+}
+
+function sceneryPoint(item, z, offsetX, y, basis) {
+  return project({ x: item.x + offsetX, y, z }, basis);
+}
+
+function drawRoadsideCactus(item, z, basis) {
+  const plantHeight = item.scale * 1.25;
+  const reach = plantHeight * 0.24;
+  const base = sceneryPoint(item, z, 0, 0.02, basis);
+  const top = sceneryPoint(item, z, 0, plantHeight, basis);
+  const leftShoulder = sceneryPoint(item, z, 0, plantHeight * 0.48, basis);
+  const leftElbow = sceneryPoint(item, z, -reach, plantHeight * 0.48, basis);
+  const leftTip = sceneryPoint(item, z, -reach, plantHeight * 0.72, basis);
+  const rightShoulder = sceneryPoint(item, z, 0, plantHeight * 0.64, basis);
+  const rightElbow = sceneryPoint(item, z, reach, plantHeight * 0.64, basis);
+  const rightTip = sceneryPoint(item, z, reach, plantHeight * 0.88, basis);
+  const points = [
+    base,
+    top,
+    leftShoulder,
+    leftElbow,
+    leftTip,
+    rightShoulder,
+    rightElbow,
+    rightTip,
+  ];
+  if (points.some((point) => !point)) return;
+
+  context.save();
+  context.globalAlpha = sceneryAlpha(z);
+  context.fillStyle = "rgba(10, 7, 6, 0.46)";
+  context.beginPath();
+  context.ellipse(
+    base.x,
+    base.y,
+    Math.max(1, base.scale * plantHeight * 0.22),
+    Math.max(0.5, base.scale * plantHeight * 0.055),
+    0,
+    0,
+    Math.PI * 2,
+  );
+  context.fill();
+
+  context.strokeStyle = "#1b100d";
+  context.lineWidth = Math.max(0.8, base.scale * plantHeight * 0.085);
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(base.x, base.y);
+  context.lineTo(top.x, top.y);
+  context.moveTo(leftShoulder.x, leftShoulder.y);
+  context.lineTo(leftElbow.x, leftElbow.y);
+  context.lineTo(leftTip.x, leftTip.y);
+  context.moveTo(rightShoulder.x, rightShoulder.y);
+  context.lineTo(rightElbow.x, rightElbow.y);
+  context.lineTo(rightTip.x, rightTip.y);
+  context.stroke();
+  context.restore();
+}
+
+function drawRoadsideRock(item, z, basis) {
+  const base = sceneryPoint(item, z, 0, 0.02, basis);
+  if (!base) return;
+  const size = Math.max(0.8, base.scale * item.scale * 0.42);
+
+  context.save();
+  context.globalAlpha = sceneryAlpha(z);
+  context.fillStyle = "#4a2e23";
+  context.beginPath();
+  context.ellipse(
+    base.x,
+    base.y - size * 0.22,
+    size,
+    size * 0.52,
+    item.x < 0 ? -0.18 : 0.18,
+    0,
+    Math.PI * 2,
+  );
+  context.fill();
+  context.fillStyle = "rgba(210, 132, 82, 0.16)";
+  context.beginPath();
+  context.ellipse(
+    base.x - size * 0.18,
+    base.y - size * 0.36,
+    size * 0.48,
+    size * 0.16,
+    -0.16,
+    0,
+    Math.PI * 2,
+  );
+  context.fill();
+  context.restore();
+}
+
+function drawRoadsideScrub(item, z, basis) {
+  const base = sceneryPoint(item, z, 0, 0.02, basis);
+  if (!base) return;
+  const size = Math.max(1, base.scale * item.scale * 0.34);
+
+  context.save();
+  context.globalAlpha = sceneryAlpha(z);
+  context.strokeStyle = "#2a1913";
+  context.lineWidth = Math.max(0.7, size * 0.13);
+  context.lineCap = "round";
+  context.beginPath();
+  for (let index = -2; index <= 2; index += 1) {
+    context.moveTo(base.x, base.y);
+    context.lineTo(
+      base.x + index * size * 0.42,
+      base.y - size * (0.64 + (2 - Math.abs(index)) * 0.16),
+    );
+  }
+  context.stroke();
+  context.restore();
+}
+
+function drawRoadsideScenery(basis) {
+  const travel = (state.simulationTime * roadTravelSpeed) % desertSceneryLoop;
+  const visibleScenery = roadsideScenery
+    .map((item) => ({
+      ...item,
+      visibleZ:
+        ((item.z - travel - 1 + desertSceneryLoop) % desertSceneryLoop) + 1,
+    }))
+    .sort((a, b) => b.visibleZ - a.visibleZ);
+
+  for (const item of visibleScenery) {
+    if (item.kind === "cactus") {
+      drawRoadsideCactus(item, item.visibleZ, basis);
+    } else if (item.kind === "scrub") {
+      drawRoadsideScrub(item, item.visibleZ, basis);
+    } else {
+      drawRoadsideRock(item, item.visibleZ, basis);
+    }
+  }
+}
+
 function drawWorldLine(
   start,
   end,
@@ -503,7 +652,7 @@ function drawRoad(basis) {
     );
   }
 
-  const roadOffset = (state.simulationTime * 7) % 3;
+  const roadOffset = (state.simulationTime * roadTravelSpeed) % 3;
   for (let z = -2; z < 52; z += 3) {
     const shiftedZ = z - roadOffset;
     drawWorldLine(
@@ -1043,6 +1192,7 @@ function render() {
   drawBackground();
   const basis = cameraBasis();
   drawRoad(basis);
+  drawRoadsideScenery(basis);
   const bikes = formation(state.packSize);
   const sortedBikes = [...bikes].sort((a, b) => {
     const depthA = project({ x: a.x, y: 0.6, z: a.z }, basis)?.depth ?? 0;
