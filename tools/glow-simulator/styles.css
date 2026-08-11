@@ -862,6 +862,8 @@ input[type="range"] {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   background: #090d14;
 }
 
@@ -904,6 +906,19 @@ input[type="range"] {
 
 .canvas-wrap {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  background: #080c14;
+}
+
+.preview-stage {
+  position: relative;
+  grid-row: 1;
+  grid-column: 1;
+  height: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
   background: #080c14;
@@ -985,6 +1000,23 @@ input[type="range"] {
   box-shadow: -24px 0 64px rgba(0, 0, 0, 0.42);
   backdrop-filter: blur(18px);
   scrollbar-color: #354158 transparent;
+}
+
+.canvas-wrap.is-workshop-open {
+  grid-template-columns: minmax(300px, 1fr) minmax(360px, 48%);
+}
+
+.canvas-wrap.is-workshop-open .pattern-workshop {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  grid-row: 1;
+  grid-column: 2;
+  width: auto;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .workshop-header {
@@ -1266,6 +1298,25 @@ input[type="range"] {
   border: 0;
 }
 
+@media (min-width: 901px) and (max-width: 1080px) {
+  .canvas-wrap.is-workshop-open {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 55%) minmax(0, 45%);
+  }
+
+  .canvas-wrap.is-workshop-open .preview-stage {
+    grid-row: 1;
+  }
+
+  .canvas-wrap.is-workshop-open .pattern-workshop {
+    grid-row: 2;
+    grid-column: 1;
+    border-top: 1px solid #303a4e;
+    border-left: 0;
+    box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.32);
+  }
+}
+
 @media (max-width: 900px) {
   .simulator-shell {
     padding: 16px;
@@ -1290,6 +1341,7 @@ input[type="range"] {
 
   .scene-panel {
     order: 1;
+    overflow: visible;
   }
 
   .control-section {
@@ -1307,6 +1359,26 @@ input[type="range"] {
 
   .canvas-wrap {
     min-height: 520px;
+  }
+
+  .canvas-wrap.is-workshop-open {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(460px, 56vh) auto;
+    overflow: visible;
+  }
+
+  .canvas-wrap.is-workshop-open .preview-stage {
+    grid-row: 1;
+  }
+
+  .canvas-wrap.is-workshop-open .pattern-workshop {
+    grid-row: 2;
+    grid-column: 1;
+    height: auto;
+    max-height: min(760px, 82vh);
+    border-top: 1px solid #303a4e;
+    border-left: 0;
+    box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.32);
   }
 }
 
@@ -1362,6 +1434,10 @@ input[type="range"] {
 
   .canvas-wrap {
     min-height: 470px;
+  }
+
+  .canvas-wrap.is-workshop-open {
+    grid-template-rows: minmax(430px, 58vh) auto;
   }
 
   .pattern-workshop {

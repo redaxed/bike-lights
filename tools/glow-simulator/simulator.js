@@ -723,6 +723,7 @@ function selectEffect(effectName) {
 }
 
 const workshopElements = {
+  canvasWrap: document.querySelector(".canvas-wrap"),
   panel: document.getElementById("pattern-workshop"),
   open: document.getElementById("open-workshop"),
   close: document.getElementById("close-workshop"),
@@ -882,14 +883,18 @@ function setBikeVariation(value) {
 
 function openWorkshop() {
   workshopElements.panel.hidden = false;
+  workshopElements.canvasWrap.classList.add("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "true");
   workshopElements.body.focus();
+  window.requestAnimationFrame(resizeCanvas);
 }
 
 function closeWorkshop() {
   workshopElements.panel.hidden = true;
+  workshopElements.canvasWrap.classList.remove("is-workshop-open");
   workshopElements.open.setAttribute("aria-expanded", "false");
   workshopElements.open.focus();
+  window.requestAnimationFrame(resizeCanvas);
 }
 
 async function copyText(text) {
