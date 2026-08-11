@@ -167,6 +167,14 @@ h2 {
   box-shadow: 0 26px 90px rgba(0, 0, 0, 0.38);
 }
 
+.workspace.is-controls-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace.is-controls-collapsed .control-panel {
+  display: none;
+}
+
 .control-panel {
   z-index: 1;
   display: flex;
@@ -981,11 +989,23 @@ input[type="range"] {
   background: rgba(11, 15, 23, 0.92);
 }
 
+.scene-toolbar-left,
 .view-switcher,
 .scene-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.controls-toggle {
+  color: #b8c4d7;
+  white-space: nowrap;
+}
+
+.controls-toggle span:first-child {
+  color: #61efff;
+  font-size: 0.88rem;
+  line-height: 1;
 }
 
 .view-button,
@@ -1520,6 +1540,12 @@ input[type="range"] {
 
   .scene-toolbar {
     align-items: stretch;
+  }
+
+  .scene-toolbar-left {
+    display: grid;
+    width: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .view-switcher {

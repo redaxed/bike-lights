@@ -5,6 +5,11 @@ const mastModel = globalThis.glowMastModel;
 
 const canvas = document.getElementById("pack-canvas");
 const context = canvas.getContext("2d", { alpha: false });
+const workspace = document.querySelector(".workspace");
+const controlPanel = document.getElementById("simulation-controls");
+const controlsToggle = document.getElementById("controls-toggle");
+const controlsToggleIcon = document.getElementById("controls-toggle-icon");
+const controlsToggleLabel = document.getElementById("controls-toggle-label");
 const workshopReviewGate = patternWorkshop.createReviewGate();
 
 const palettes = {
@@ -75,6 +80,7 @@ const state = {
   hardwareMode: "noodle",
   foamColor: "white",
   foamTransmission: 0.18,
+  controlsCollapsed: false,
   paused: false,
   simulationTime: 0,
   view: "rear",
@@ -1302,6 +1308,18 @@ function selectView(viewName) {
   updateInterface();
 }
 
+function setControlsCollapsed(collapsed) {
+  state.controlsCollapsed = collapsed;
+  workspace.classList.toggle("is-controls-collapsed", collapsed);
+  controlPanel.setAttribute("aria-hidden", String(collapsed));
+  controlsToggle.setAttribute("aria-expanded", String(!collapsed));
+  controlsToggleIcon.textContent = collapsed ? "→" : "←";
+  controlsToggleLabel.textContent = collapsed
+    ? "Show controls"
+    : "Hide controls";
+  window.requestAnimationFrame(resizeCanvas);
+}
+
 function groupEffectButtons() {
   const groups = [
     { label: "Core", minimumId: 0, maximumId: 9 },
@@ -1344,6 +1362,10 @@ document.querySelectorAll("[data-effect]").forEach((button) => {
 
 document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => selectView(button.dataset.view));
+});
+
+controlsToggle.addEventListener("click", () => {
+  setControlsCollapsed(!state.controlsCollapsed);
 });
 
 document.querySelectorAll("[data-hardware]").forEach((button) => {
@@ -1523,6 +1545,7 @@ globalThis.glowSimulator = {
   sampleEffect: simulatorSampleEffect,
   state,
   selectEffect,
+  setControlsCollapsed,
   selectView,
   workshop: {
     applyPreview: applyWorkshopPreview,

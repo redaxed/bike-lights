@@ -42,7 +42,12 @@
       </header>
 
       <div class="workspace">
-        <aside class="control-panel" aria-label="Simulation controls">
+        <aside
+          id="simulation-controls"
+          class="control-panel"
+          aria-label="Simulation controls"
+          aria-hidden="false"
+        >
           <section class="control-section switch-row phase-control">
             <div>
               <h2>Synchronized phase</h2>
@@ -647,39 +652,51 @@
 
         <section class="scene-panel" aria-label="Bike pack preview">
           <div class="scene-toolbar">
-            <div class="view-switcher" role="group" aria-label="Camera view">
+            <div class="scene-toolbar-left">
               <button
-                class="view-button is-active"
+                id="controls-toggle"
+                class="utility-button controls-toggle"
                 type="button"
-                data-view="rear"
-                aria-pressed="true"
+                aria-controls="simulation-controls"
+                aria-expanded="true"
               >
-                Rear
+                <span id="controls-toggle-icon" aria-hidden="true">←</span>
+                <span id="controls-toggle-label">Hide controls</span>
               </button>
-              <button
-                class="view-button"
-                type="button"
-                data-view="pack"
-                aria-pressed="false"
-              >
-                Pack
-              </button>
-              <button
-                class="view-button"
-                type="button"
-                data-view="side"
-                aria-pressed="false"
-              >
-                Side
-              </button>
-              <button
-                class="view-button"
-                type="button"
-                data-view="overhead"
-                aria-pressed="false"
-              >
-                Overhead
-              </button>
+              <div class="view-switcher" role="group" aria-label="Camera view">
+                <button
+                  class="view-button is-active"
+                  type="button"
+                  data-view="rear"
+                  aria-pressed="true"
+                >
+                  Rear
+                </button>
+                <button
+                  class="view-button"
+                  type="button"
+                  data-view="pack"
+                  aria-pressed="false"
+                >
+                  Pack
+                </button>
+                <button
+                  class="view-button"
+                  type="button"
+                  data-view="side"
+                  aria-pressed="false"
+                >
+                  Side
+                </button>
+                <button
+                  class="view-button"
+                  type="button"
+                  data-view="overhead"
+                  aria-pressed="false"
+                >
+                  Overhead
+                </button>
+              </div>
             </div>
             <div class="scene-actions">
               <button id="reset-camera" class="utility-button" type="button">
