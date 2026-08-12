@@ -50,6 +50,7 @@ class GlowModule : public SinglePortModule, private concurrency::OSThread
     bool hostClockValid = false;
     int64_t hostClockOffsetMs = 0;
     uint64_t hostClockSetMonotonicMs = 0;
+    uint32_t lastClockSyncToken = 0;
     uint64_t lastFrameEpochMs = 0;
     uint32_t lastFrameHash = 0;
     uint32_t renderCount = 0;

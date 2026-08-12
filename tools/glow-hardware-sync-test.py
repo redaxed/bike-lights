@@ -130,42 +130,32 @@ def request(
     return decode_status(response_payload), started, finished
 
 
-def sync_clock(
-    interface: SerialInterface, token_base: int
-) -> tuple[GlowStatus, float, float, int]:
-    errors: list[str] = []
+def send_clock_sync(interface: SerialInterface, token: int) -> tuple[float, float]:
+    started = epoch_ms()
+    interface.sendData(
+        encode_clock_sync(token, round(started)),
+        destinationId=local_node_num(interface),
+        portNum=portnums_pb2.PortNum.PRIVATE_APP,
+        wantResponse=False,
+        hopLimit=0,
+    )
+    return started, epoch_ms()
 
-    for calibration_round in range(3):
-        for burst_index in range(3):
-            sent_at = epoch_ms()
-            interface.sendData(
-                encode_clock_sync(
-                    token_base + calibration_round * 8 + burst_index,
-                    round(sent_at),
-                ),
-                destinationId=local_node_num(interface),
-                portNum=portnums_pb2.PortNum.PRIVATE_APP,
-                wantResponse=False,
-                hopLimit=0,
-            )
-            time.sleep(0.05)
-        time.sleep(0.25)
-        try:
-            status, inbound_offset, _attempts, rtt = query_status(
-                interface,
-                token_base + 0x100 + calibration_round * 8,
-                0,
-            )
-        except TimeoutError as exc:
-            errors.append(str(exc))
-            continue
-        if status.result != 0 or status.clock_source != 2:
-            raise RuntimeError(f"clock sync rejected: {status}")
-        if abs(inbound_offset) < FRAME_INTERVAL_MS:
-            return status, rtt, inbound_offset, calibration_round + 1
-        errors.append(f"clock offset {inbound_offset:.1f} ms")
 
-    raise RuntimeError(f"clock sync failed after three calibration rounds: {errors!r}")
+def sync_clock_pair(
+    first: SerialInterface, second: SerialInterface
+) -> tuple[float, float, float]:
+    token = int(epoch_ms()) & 0xFFFFFFFF
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        first_future = pool.submit(send_clock_sync, first, token)
+        second_future = pool.submit(send_clock_sync, second, token)
+        first_started, first_finished = first_future.result()
+        second_started, second_finished = second_future.result()
+    return (
+        abs(first_started - second_started),
+        first_finished - first_started,
+        second_finished - second_started,
+    )
 
 
 def query_status(
@@ -204,15 +194,25 @@ def run(first_port: str, second_port: str) -> None:
     second = SerialInterface(devPath=second_port, connectNow=True)
     try:
         time.sleep(2)
-        first_sync, first_rtt, first_offset, first_sync_attempts = sync_clock(
-            first, 0x1000
-        )
-        second_sync, second_rtt, second_offset, second_sync_attempts = sync_clock(
-            second, 0x2000
-        )
-        if abs(first_offset - second_offset) > FRAME_INTERVAL_MS:
+        dispatch_skew, first_write_ms, second_write_ms = sync_clock_pair(first, second)
+        if dispatch_skew >= FRAME_INTERVAL_MS:
             raise RuntimeError(
-                f"clock skew {abs(first_offset - second_offset):.1f} ms exceeds one {FRAME_INTERVAL_MS} ms frame"
+                f"clock calibration dispatch skew {dispatch_skew:.1f} ms exceeds one frame"
+            )
+        time.sleep(0.5)
+        (first_sync, _, first_sync_attempts, first_rtt), (
+            second_sync,
+            _,
+            second_sync_attempts,
+            second_rtt,
+        ) = query_pair(first, second, 0x2400, 0)
+        if first_sync.clock_source != 2 or second_sync.clock_source != 2:
+            raise RuntimeError(
+                f"one or both boards rejected host clock calibration: {first_sync}, {second_sync}"
+            )
+        if first_sync.result != 0 or second_sync.result != 0:
+            raise RuntimeError(
+                f"one or both clock status probes failed: {first_sync}, {second_sync}"
             )
 
         cue_id = int(epoch_ms()) & 0xFFFFFFFF
@@ -248,9 +248,9 @@ def run(first_port: str, second_port: str) -> None:
         if delivery_status is None:
             raise TimeoutError("second board did not accept the broadcast Glow cue")
 
-        (first_status, first_probe_offset, first_probe_attempts, _), (
+        (first_status, _, first_probe_attempts, _), (
             second_status,
-            second_probe_offset,
+            _,
             second_probe_attempts,
             _,
         ) = query_pair(first, second, 0x3000, sample_epoch_ms)
@@ -321,10 +321,10 @@ def run(first_port: str, second_port: str) -> None:
             f"ports={first_port},{second_port}"
         )
         print(
-            f"clock_rtt_ms={first_rtt:.1f},{second_rtt:.1f} "
-            f"clock_offsets_ms={first_offset:.1f},{second_offset:.1f} "
-            f"clock_attempts={first_sync_attempts},{second_sync_attempts} "
-            f"probe_offsets_ms={first_probe_offset:.1f},{second_probe_offset:.1f} "
+            f"clock_dispatch_skew_ms={dispatch_skew:.2f} "
+            f"clock_write_ms={first_write_ms:.1f},{second_write_ms:.1f} "
+            f"clock_status=host-sync,host-sync status_rtt_ms={first_rtt:.1f},{second_rtt:.1f} "
+            f"status_attempts={first_sync_attempts},{second_sync_attempts} "
             f"probe_attempts={first_probe_attempts},{second_probe_attempts}"
         )
         print(
