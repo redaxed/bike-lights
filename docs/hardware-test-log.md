@@ -69,3 +69,25 @@ Dax confirmed that a LoRa antenna is attached to each board. Both boards also re
 | B     | `/dev/cu.usbmodem83201` | `44:1B:F6:F8:EF:24` | Present; no port user |
 
 The antenna safety prerequisite is complete, but it does not authorize flashing. All useful non-reset read-only diagnostics were exhausted in the preceding runs, so stock upload and subsequent mesh tests remain blocked on Dax's separate explicit approval. No device operation was performed in this check.
+
+## 2026-08-12 13:31-13:43 PDT — Approved stock flash and control-surface verification
+
+Dax explicitly approved a standard stock Meshtastic flash on both antenna-equipped boards. The exact `heltec-wireless-tracker-v2` target was rebuilt from repository commit `40050415c` before either upload:
+
+- Firmware: `2.7.26.4005041`, vanilla edition
+- Application: 2,190,496 bytes; SHA-256 `a16918f765ecd93e68c370d250766c616ad87fbcd2055a75e1fd2784b5e5dee8`
+- Factory image: 2,256,032 bytes; SHA-256 `236362c724b899306cdf71de17a9b623b6a246c69379cb385b8606a834a526d9`
+- Build: pass; 144,712 of 327,680 RAM bytes and 2,190,069 of 3,342,336 application-flash bytes
+
+Each board was uploaded separately with `pio run -e heltec-wireless-tracker-v2 -t upload --upload-port <port>`. Esptool verified every written hash. This standard upload rewrote the bootloader, partition table, OTA data, and `app0` ranges; it did not perform a whole-chip erase and did not touch the NVS partition at `0x9000`.
+
+| Board | Upload identity     | Post-flash serial port          | Node ID     | Upload | USB protocol |
+| ----- | ------------------- | ------------------------------- | ----------- | ------ | ------------ |
+| A     | `44:1B:F6:F8:ED:2C` | `/dev/cu.usbmodem441BF6F8ED2C1` | `!f6f8ed2c` | Pass   | Pass         |
+| B     | `44:1B:F6:F8:EF:24` | `/dev/cu.usbmodem441BF6F8EF241` | `!f6f8ef24` | Pass   | Pass         |
+
+Both nodes report the exact `HELTEC_WIRELESS_TRACKER_V2` hardware model, `heltec-wireless-tracker-v2` PlatformIO environment, firmware `2.7.26.4005041`, one-node databases containing only themselves, client role, and matching default primary channels. Both have `region: UNSET`, so no LoRa traffic was attempted.
+
+Stock BLE discovery now finds `Meshtastic_ed2c` and `Meshtastic_ef24`. Dax entered the separate on-screen pairing PIN for each board, and both returned their node table over BLE. The CLI displayed the requested data but hung while disconnecting, so each already-complete process was interrupted; this was a host BLE-client cleanup issue, not a device test failure.
+
+The next test requires explicit approval to set the legal LoRa region on both boards. Once their regions match, the existing default primary-channel configuration is already compatible for peer discovery, bidirectional acknowledged text, repeatability, and stationary RSSI/SNR measurements. Stock firmware does not contain the Dax Glow effects, and no external addressable strip is wired, so physical light testing remains pending the custom firmware and bench circuit.
