@@ -58,3 +58,14 @@ The requested ChatGPT Pro fallback was consulted with the observed device eviden
 The USB transport is stable, but the running application on each board remains unknown and silent over both USB and BLE. Range, RSSI/SNR, peer discovery, bidirectional text/ACK, repeatability, and light-effect integration remain blocked until the boards run known responsive firmware. Physical LED output also remains untested because no addressable strip is wired or visually observable.
 
 The next evidence-producing step requires Dax to confirm both LoRa antennas are attached and explicitly approve a standard stock Meshtastic upload to both exact Tracker V2 boards. After a successful stock baseline, the safe order is identity/config comparison, peer discovery, bidirectional acknowledged messages, a repeated message matrix, stationary RSSI/SNR logging, and only then a separately powered and fused WS2812B bench strip for the simulator-to-firmware effect contract.
+
+## 2026-08-12 08:28 PDT — Antenna prerequisite confirmed
+
+Dax confirmed that a LoRa antenna is attached to each board. Both boards also remain connected and unclaimed on their original ports and USB identities:
+
+| Board | Serial port             | USB serial          | Result                |
+| ----- | ----------------------- | ------------------- | --------------------- |
+| A     | `/dev/cu.usbmodem83101` | `44:1B:F6:F8:ED:2C` | Present; no port user |
+| B     | `/dev/cu.usbmodem83201` | `44:1B:F6:F8:EF:24` | Present; no port user |
+
+The antenna safety prerequisite is complete, but it does not authorize flashing. All useful non-reset read-only diagnostics were exhausted in the preceding runs, so stock upload and subsequent mesh tests remain blocked on Dax's separate explicit approval. No device operation was performed in this check.
