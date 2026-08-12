@@ -31,6 +31,7 @@ enum class Result : uint8_t {
     UNSUPPORTED_EFFECT = 5,
     CLOCK_UNAVAILABLE = 6,
     REMOTE_CLOCK_SYNC_DENIED = 7,
+    STALE_CLOCK_SYNC = 8,
 };
 
 enum class ClockSource : uint8_t {

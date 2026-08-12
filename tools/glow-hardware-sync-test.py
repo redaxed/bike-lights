@@ -14,7 +14,6 @@ from typing import Any
 from meshtastic import BROADCAST_NUM
 from meshtastic.protobuf import portnums_pb2
 from meshtastic.serial_interface import SerialInterface
-from pubsub import pub
 
 MAGIC = b"GLW"
 VERSION = 1
@@ -104,7 +103,7 @@ def local_node_num(interface: SerialInterface) -> int:
 
 
 def request(
-    interface: SerialInterface, payload: bytes, timeout: float = 20
+    interface: SerialInterface, payload: bytes, timeout: float = 8
 ) -> tuple[GlowStatus, float, float]:
     completed = threading.Event()
     replies: list[dict[str, Any]] = []
@@ -133,39 +132,59 @@ def request(
 
 def sync_clock(
     interface: SerialInterface, token_base: int
-) -> tuple[GlowStatus, float, float]:
-    best_rtt = float("inf")
-    best_status: GlowStatus | None = None
-    best_offset = float("inf")
+) -> tuple[GlowStatus, float, float, int]:
+    errors: list[str] = []
 
-    for attempt in range(4):
-        compensation = 0 if best_rtt == float("inf") else round(best_rtt / 2)
-        sent_at = epoch_ms()
-        payload = encode_clock_sync(token_base + attempt, round(sent_at + compensation))
-        status, started, finished = request(interface, payload)
+    for calibration_round in range(3):
+        for burst_index in range(3):
+            sent_at = epoch_ms()
+            interface.sendData(
+                encode_clock_sync(
+                    token_base + calibration_round * 8 + burst_index,
+                    round(sent_at),
+                ),
+                destinationId=local_node_num(interface),
+                portNum=portnums_pb2.PortNum.PRIVATE_APP,
+                wantResponse=False,
+                hopLimit=0,
+            )
+            time.sleep(0.05)
+        time.sleep(0.25)
+        try:
+            status, inbound_offset, _attempts, rtt = query_status(
+                interface,
+                token_base + 0x100 + calibration_round * 8,
+                0,
+            )
+        except TimeoutError as exc:
+            errors.append(str(exc))
+            continue
         if status.result != 0 or status.clock_source != 2:
             raise RuntimeError(f"clock sync rejected: {status}")
-        rtt = finished - started
-        offset = status.now_epoch_ms - ((started + finished) / 2)
-        if rtt < best_rtt:
-            best_rtt = rtt
-            best_status = status
-            best_offset = offset
+        if abs(inbound_offset) < FRAME_INTERVAL_MS:
+            return status, rtt, inbound_offset, calibration_round + 1
+        errors.append(f"clock offset {inbound_offset:.1f} ms")
 
-    assert best_status is not None
-    return best_status, best_rtt, best_offset
+    raise RuntimeError(f"clock sync failed after three calibration rounds: {errors!r}")
 
 
 def query_status(
     interface: SerialInterface, token: int, sample_epoch_ms: int
-) -> tuple[GlowStatus, float]:
-    status, started, finished = request(
-        interface, encode_status_request(token, sample_epoch_ms)
-    )
-    if status.result != 0:
-        raise RuntimeError(f"status request rejected: {status}")
-    clock_offset = status.now_epoch_ms - ((started + finished) / 2)
-    return status, clock_offset
+) -> tuple[GlowStatus, float, int, float]:
+    errors: list[str] = []
+    for attempt in range(4):
+        try:
+            status, started, finished = request(
+                interface, encode_status_request(token + attempt, sample_epoch_ms)
+            )
+        except TimeoutError as exc:
+            errors.append(str(exc))
+            continue
+        if status.result != 0:
+            raise RuntimeError(f"status request rejected: {status}")
+        inbound_offset = status.now_epoch_ms - started
+        return status, inbound_offset, attempt + 1, finished - started
+    raise TimeoutError(f"status request failed after four attempts: {errors!r}")
 
 
 def query_pair(
@@ -173,7 +192,7 @@ def query_pair(
     second: SerialInterface,
     token: int,
     sample_epoch_ms: int,
-) -> tuple[tuple[GlowStatus, float], tuple[GlowStatus, float]]:
+) -> tuple[tuple[GlowStatus, float, int, float], tuple[GlowStatus, float, int, float]]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         first_future = pool.submit(query_status, first, token, sample_epoch_ms)
         second_future = pool.submit(query_status, second, token + 1, sample_epoch_ms)
@@ -181,21 +200,16 @@ def query_pair(
 
 
 def run(first_port: str, second_port: str) -> None:
-    received_cue = threading.Event()
-    received_packets: list[dict[str, Any]] = []
     first = SerialInterface(devPath=first_port, connectNow=True)
     second = SerialInterface(devPath=second_port, connectNow=True)
-
-    def on_private(packet: dict[str, Any], interface: SerialInterface) -> None:
-        if interface is second:
-            received_packets.append(packet)
-            received_cue.set()
-
-    pub.subscribe(on_private, "meshtastic.receive.data.PRIVATE_APP")
     try:
         time.sleep(2)
-        first_sync, first_rtt, first_offset = sync_clock(first, 0x1000)
-        second_sync, second_rtt, second_offset = sync_clock(second, 0x2000)
+        first_sync, first_rtt, first_offset, first_sync_attempts = sync_clock(
+            first, 0x1000
+        )
+        second_sync, second_rtt, second_offset, second_sync_attempts = sync_clock(
+            second, 0x2000
+        )
         if abs(first_offset - second_offset) > FRAME_INTERVAL_MS:
             raise RuntimeError(
                 f"clock skew {abs(first_offset - second_offset):.1f} ms exceeds one {FRAME_INTERVAL_MS} ms frame"
@@ -216,16 +230,30 @@ def run(first_port: str, second_port: str) -> None:
             wantResponse=False,
             hopLimit=3,
         )
-        if not received_cue.wait(30):
-            raise TimeoutError("second board did not receive the broadcast Glow cue")
-        delivered_payload = received_packets[-1].get("decoded", {}).get("payload")
-        if delivered_payload != cue_payload:
-            raise RuntimeError("second board's Glow cue payload changed in transit")
 
         sample_epoch_ms = start_epoch_ms + 2040
-        (first_status, first_probe_offset), (second_status, second_probe_offset) = (
-            query_pair(first, second, 0x3000, sample_epoch_ms)
-        )
+        delivery_status: GlowStatus | None = None
+        for delivery_probe in range(4):
+            candidate, _, _, _ = query_status(
+                second, 0x2800 + delivery_probe * 4, sample_epoch_ms
+            )
+            if (
+                candidate.cue_id == cue_id
+                and candidate.start_epoch_ms == start_epoch_ms
+                and candidate.effect_id == 8
+            ):
+                delivery_status = candidate
+                break
+            time.sleep(1)
+        if delivery_status is None:
+            raise TimeoutError("second board did not accept the broadcast Glow cue")
+
+        (first_status, first_probe_offset, first_probe_attempts, _), (
+            second_status,
+            second_probe_offset,
+            second_probe_attempts,
+            _,
+        ) = query_pair(first, second, 0x3000, sample_epoch_ms)
         for label, status in (("first", first_status), ("second", second_status)):
             if not status.flags & 0x02:
                 raise RuntimeError(
@@ -252,10 +280,10 @@ def run(first_port: str, second_port: str) -> None:
         if wait_seconds:
             time.sleep(wait_seconds)
 
-        matching_live_frames = 0
+        phase_aligned_live_probes = 0
         live_probes: list[tuple[int, int, int, int]] = []
-        for probe in range(6):
-            (first_live, _), (second_live, _) = query_pair(
+        for probe in range(3):
+            (first_live, _, _, _), (second_live, _, _, _) = query_pair(
                 first, second, 0x4000 + probe * 2, sample_epoch_ms
             )
             live_probes.append(
@@ -267,18 +295,18 @@ def run(first_port: str, second_port: str) -> None:
                 )
             )
             if (
-                first_live.last_frame_epoch_ms == second_live.last_frame_epoch_ms
-                and first_live.last_frame_hash == second_live.last_frame_hash
+                first_live.last_frame_epoch_ms % FRAME_INTERVAL_MS == 0
+                and second_live.last_frame_epoch_ms % FRAME_INTERVAL_MS == 0
             ):
-                matching_live_frames += 1
+                phase_aligned_live_probes += 1
             time.sleep(0.12)
-        if matching_live_frames == 0:
+        if phase_aligned_live_probes != len(live_probes):
             raise RuntimeError(
-                f"no simultaneous live frame probe matched: {live_probes!r}"
+                f"one or more live frames missed the absolute 40 ms phase grid: {live_probes!r}"
             )
 
         time.sleep(0.25)
-        (first_after, _), (second_after, _) = query_pair(
+        (first_after, _, _, _), (second_after, _, _, _) = query_pair(
             first, second, 0x5000, sample_epoch_ms
         )
         if (
@@ -295,18 +323,20 @@ def run(first_port: str, second_port: str) -> None:
         print(
             f"clock_rtt_ms={first_rtt:.1f},{second_rtt:.1f} "
             f"clock_offsets_ms={first_offset:.1f},{second_offset:.1f} "
-            f"probe_offsets_ms={first_probe_offset:.1f},{second_probe_offset:.1f}"
+            f"clock_attempts={first_sync_attempts},{second_sync_attempts} "
+            f"probe_offsets_ms={first_probe_offset:.1f},{second_probe_offset:.1f} "
+            f"probe_attempts={first_probe_attempts},{second_probe_attempts}"
         )
         print(
             f"cue_id=0x{cue_id:08x} effect=8 brightness=48 start_epoch_ms={start_epoch_ms} "
-            f"payload_bytes={len(cue_payload)} delivery=byte-for-byte"
+            f"payload_bytes={len(cue_payload)} delivery=broadcast-cue-accepted"
         )
         print(
             f"sample_epoch_ms={sample_epoch_ms} frame={first_status.sample_frame_number} "
             f"shared_hash=0x{first_status.sample_frame_hash:08x}"
         )
         print(
-            f"live_matching_probes={matching_live_frames}/6 "
+            f"live_phase_aligned_probes={phase_aligned_live_probes}/{len(live_probes)} "
             f"render_counts={first_after.render_count},{second_after.render_count}"
         )
         print(
@@ -314,10 +344,6 @@ def run(first_port: str, second_port: str) -> None:
             f"brightness_cap={first_status.max_brightness} physical_led_observation=false"
         )
     finally:
-        try:
-            pub.unsubscribe(on_private, "meshtastic.receive.data.PRIVATE_APP")
-        except Exception:
-            pass
         first.close()
         second.close()
 

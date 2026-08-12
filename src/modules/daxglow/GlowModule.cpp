@@ -19,6 +19,7 @@ namespace
 {
 
 constexpr uint32_t STATUS_LOG_INTERVAL_MS = 5000;
+constexpr uint64_t CLOCK_STALE_TOLERANCE_MS = 250;
 #ifdef DAX_GLOW_SELF_TEST
 constexpr uint8_t SELF_TEST_BRIGHTNESS = 32;
 constexpr uint8_t SELF_TEST_EFFECT = 8;
@@ -254,9 +255,15 @@ ProcessMessage GlowModule::handleReceived(const meshtastic_MeshPacket &mp)
         if (result == daxglow::Result::OK) {
             const uint64_t receivedAt = monotonicMs();
             concurrency::LockGuard guard(&stateLock);
-            hostClockOffsetMs = static_cast<int64_t>(request.hostEpochMs) - static_cast<int64_t>(receivedAt);
-            hostClockSetMonotonicMs = receivedAt;
-            hostClockValid = true;
+            const int64_t currentAtReceive = static_cast<int64_t>(receivedAt) + hostClockOffsetMs;
+            if (hostClockValid && currentAtReceive > 0 &&
+                request.hostEpochMs + CLOCK_STALE_TOLERANCE_MS < static_cast<uint64_t>(currentAtReceive)) {
+                result = daxglow::Result::STALE_CLOCK_SYNC;
+            } else {
+                hostClockOffsetMs = static_cast<int64_t>(request.hostEpochMs) - static_cast<int64_t>(receivedAt);
+                hostClockSetMonotonicMs = receivedAt;
+                hostClockValid = true;
+            }
         }
         if (mp.decoded.want_response) {
             prepareStatusReply(request.token, request.hostEpochMs, result);
