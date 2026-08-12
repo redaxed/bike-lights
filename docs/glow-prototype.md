@@ -2,9 +2,9 @@
 
 ## Current state
 
-This repository is based on Meshtastic tag `v2.7.26.54e0d8d` and targets the PlatformIO environment `heltec-wireless-tracker-v2`. The untouched target builds successfully on macOS with PlatformIO 6.1.19.
+This repository is based on Meshtastic 2.7.26. The stock `heltec-wireless-tracker-v2` target remains unchanged, while the opt-in `heltec-wireless-tracker-v2-dax-glow` environment enables `DAX_GLOW` and `DAX_GLOW_SELF_TEST`.
 
-No custom LED firmware is enabled yet. Stock Meshtastic remains the acceptance-test firmware until the board passes the hardware checklist below.
+Both development boards currently run the custom self-test firmware. The firmware initializes a ten-pixel WS2812-compatible output on GPIO16, renders at 25 FPS, accepts versioned Glow cues over Meshtastic `PRIVATE_APP`, and reports synchronization status and deterministic frame hashes. The live two-board test passes; see the [hardware test log](hardware-test-log.md). An LED strip has not yet been wired, so emitted light remains unverified.
 
 Connected-device evidence and unresolved hardware gates are tracked in the [hardware test log](hardware-test-log.md).
 
@@ -40,17 +40,16 @@ Build the stock firmware:
 .venv/bin/pio run -e heltec-wireless-tracker-v2
 ```
 
-The build produces these primary artifacts:
-
-```text
-.pio/build/heltec-wireless-tracker-v2/firmware-heltec-wireless-tracker-v2-2.7.26.54e0d8d.bin
-.pio/build/heltec-wireless-tracker-v2/firmware-heltec-wireless-tracker-v2-2.7.26.54e0d8d.factory.bin
-```
-
-Do not upload as part of an automated build. After the operator approves a flash and supplies the serial port, the update command is:
+Build the opt-in self-test firmware:
 
 ```bash
-.venv/bin/pio run -e heltec-wireless-tracker-v2 -t upload --upload-port /dev/cu.usbmodemXXXX
+.venv/bin/pio run -e heltec-wireless-tracker-v2-dax-glow
+```
+
+After the operator approves a flash and supplies the serial port, upload the custom build with:
+
+```bash
+.venv/bin/pio run -e heltec-wireless-tracker-v2-dax-glow -t upload --upload-port /dev/cu.usbmodemXXXX
 ```
 
 Monitor serial output separately:
@@ -63,40 +62,42 @@ Monitor serial output separately:
 
 Complete these checks before starting the LED module:
 
-- [ ] LoRa antenna attached before power
-- [ ] Exact Heltec Wireless Tracker V2 target selected
-- [ ] Meshtastic `2.7.26.54e0d8d` installed
-- [ ] Board boots without a reboot loop
-- [ ] Color screen works
-- [ ] Phone connects over Bluetooth
-- [ ] Region is set correctly for the board's physical location
-- [ ] Device role is `CLIENT`
+- [x] LoRa antenna attached before transmit
+- [x] Exact Heltec Wireless Tracker V2 target selected
+- [x] Stock Meshtastic `2.7.26.4005041` baseline completed before custom firmware
+- [x] Both boards boot without a reboot loop
+- [x] Color screens display the Bluetooth pairing PIN
+- [x] Phone connects over Bluetooth
+- [x] Region is `US` on both boards
+- [x] Device role is `CLIENT`
 - [ ] Wi-Fi remains disabled
-- [ ] Hardware identity reports `HELTEC_WIRELESS_TRACKER_V2`
+- [x] Hardware identity reports `HELTEC_WIRELESS_TRACKER_V2`
 - [ ] GPS obtains a plausible outdoor position
-- [ ] Meshtastic CLI `--info` works over USB
+- [x] Meshtastic API works over USB
 - [ ] Serial output has no critical radio or GPS errors
 
 One board can validate USB, display, Bluetooth, GNSS, and radio initialization. A controlled LoRa transmit/receive test requires a second compatible node with matching region, modem preset, frequency slot, channel name, and channel key.
 
-## Planned integration
+## Firmware integration
 
-The least invasive integration point is an optional `SinglePortModule` registered in `src/modules/Modules.cpp` only when `DAX_GLOW` is defined. It will receive versioned binary packets on `meshtastic_PortNum_PRIVATE_APP` and use an `OSThread` for nonblocking render work. Normal Tracker V2 builds will not construct the module or initialize the LED pin.
+`GlowModule` is an optional `SinglePortModule` registered in `src/modules/Modules.cpp` only when `DAX_GLOW` is defined. It receives versioned binary packets on `meshtastic_PortNum_PRIVATE_APP` and uses an `OSThread` for nonblocking render work. Normal Tracker V2 builds do not construct the module or initialize the LED pin.
 
-The module lifecycle will be:
+The implemented lifecycle is:
 
 1. Meshtastic completes normal platform, radio, GNSS, Bluetooth, and display initialization.
-2. The conditional module registers for the private application port.
-3. Packet handling validates and queues cues without blocking the router thread.
-4. The module thread renders at no more than 30 FPS from synchronized time and deterministic cue parameters.
-5. The module acknowledges accepted, duplicate, malformed, or inapplicable cues.
+2. The conditional module initializes the configured NeoPixel output and registers for the private application port.
+3. Local USB clock commands establish epoch time; increasing tokens prevent delayed clock packets from overriding newer state. Clock changes received over LoRa are rejected.
+4. A broadcast cue carries a stable effect ID, brightness, palette, cue ID, and absolute start time. Each node renders locally on a 40 ms frame grid.
+5. Status replies expose cue state, sampled and live frame hashes, render count, clock source/age, and output configuration for automated verification.
+
+Firmware currently implements effect IDs 0–9. Simulator effects 10–35 remain browser-only until they are ported to the deterministic C++ core and added to its fixed-vector tests.
 
 Milestones:
 
 1. Stock target builds without modifications. Complete.
-2. `DAX_GLOW` plus an optional ten-pixel `DAX_GLOW_SELF_TEST` on GPIO16.
-3. Validated `GlowCue` packets, acknowledgements, duplicate suppression, and deterministic effects.
-4. Host/native tests for protocol validation, targeting, timing, and fixed-time color output.
-5. Bench verification that LEDs do not disturb LoRa, GNSS, Bluetooth, or the display.
+2. `DAX_GLOW` plus an optional ten-pixel `DAX_GLOW_SELF_TEST` on GPIO16. Complete.
+3. Versioned cue, status, and clock packets; clock replay protection; deterministic effects 0–9. Complete. Cue duplicate suppression remains future hardening.
+4. Host tests for protocol validation, timing, and fixed-time color output plus live two-board hash verification. Complete for effects 0–9; pack targeting remains future work.
+5. Bench verification that LEDs do not disturb LoRa, GNSS, Bluetooth, or the display. Pending physical strip and power circuit.
 
-The next code change should implement only milestone 2 after the stock hardware gate passes.
+The next hardware step is a short WS2812B strip on GPIO16 through an SN74AHCT125-class level shifter, with common ground and a separately fused 5 V supply. Do not power the strip from a Heltec board.

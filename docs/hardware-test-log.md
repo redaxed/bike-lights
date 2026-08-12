@@ -122,3 +122,40 @@ All six packets retained the intended unicast destination and reported `hopStart
 | B → A   | direct, 9.25 dB | direct, 7.25 dB | Pass   |
 
 Both application serial ports were present and unclaimed after testing. This completes the stationary stock-firmware USB, BLE, discovery, public-key, directed-delivery, explicit-ACK, repeatability, and direct-route baseline. Meaningful range testing now requires physically separating the nodes and recording distance/obstructions. Physical light-effect testing still requires custom Glow firmware plus an externally powered, fused, level-shifted addressable strip that is visibly observable.
+
+## 2026-08-12 15:06-16:07 PDT — DAX_GLOW_SELF_TEST firmware and synchronization
+
+Dax requested and approved implementing and loading the custom self-test firmware on both antenna-equipped boards. The opt-in `heltec-wireless-tracker-v2-dax-glow` environment was built from commit `45bbcfd80`:
+
+- Firmware: `2.7.26.45bbcfd`
+- Application: 2,208,048 bytes; SHA-256 `f536690ad07091079c68a47f1d5078c993b3cd6057353b08043215d06e59fe0f`
+- Build use: 144,752 of 327,680 RAM bytes and 2,207,613 of 3,342,336 application-flash bytes
+- Self-test output contract: ten WS2812-compatible pixels on GPIO16, brightness cap 64, 25 FPS
+- Firmware effects: stable IDs 0–9 (`off`, `solid`, `wipe`, `comet`, `rainbow`, `strobe`, `pulse`, `scanner`, `chase`, `twinkle`)
+
+Each ESP32-S3 entered its normal native-USB bootloader through a 1200-baud touch and was uploaded separately. Esptool verified every written segment before reboot. This was a standard upload, not a whole-chip erase; the existing NVS configuration remained intact.
+
+| Board | Node ID     | Application port                | Firmware         | Region | Upload |
+| ----- | ----------- | ------------------------------- | ---------------- | ------ | ------ |
+| A     | `!f6f8ed2c` | `/dev/cu.usbmodem441BF6F8ED2C1` | `2.7.26.45bbcfd` | `US`   | Pass   |
+| B     | `!f6f8ef24` | `/dev/cu.usbmodem441BF6F8EF241` | `2.7.26.45bbcfd` | `US`   | Pass   |
+
+### Software and live-device evidence
+
+- The deterministic C++ effect/protocol suite passed 5/5, including simulator vectors, absolute cue time, pre-start blackout, cue decoding, and the stable status layout.
+- The unchanged stock `heltec-wireless-tracker-v2` environment and the custom environment both built successfully; the custom additions are compile-time gated.
+- Both firmware instances reported `SELF_TEST_BUILD`, `OUTPUT_INITIALIZED`, ten pixels, GPIO16, and brightness cap 64. Their render counters advanced from the running 25 FPS loop.
+- Concurrent USB clock commands were launched 0.60 ms apart. Both boards subsequently reported `HOST_SYNC`; old or repeated clock tokens are rejected so a delayed packet cannot roll a newer clock backward.
+- Board A broadcast one 29-byte Glow cue over LoRa. Board B accepted the exact cue identity, effect 8, brightness 48, and absolute start time `1786575905160` ms.
+- At the shared requested timestamp `1786575907200` ms, both boards independently reported frame 51 with the same RGB frame hash, `0x479708d5`.
+- Three of three live probes reported frames on the common 40 ms phase grid. Final render counts were 5,371 and 4,339.
+
+The repeatable command is:
+
+```bash
+mcp-server/.venv/bin/python tools/glow-hardware-sync-test.py \
+  /dev/cu.usbmodem441BF6F8ED2C1 \
+  /dev/cu.usbmodem441BF6F8EF241
+```
+
+Result: the custom module, GPIO driver initialization, LoRa cue transport, absolute-time effect calculation, and two-board firmware synchronization pass. `physical_led_observation=false`: no addressable strip was wired or visible, so this does not claim that actual LEDs emitted the expected colors. Visual and electrical verification still require the separately powered, fused, level-shifted bench circuit described in the prototype guide.
