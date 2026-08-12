@@ -100,6 +100,9 @@
 #if !MESHTASTIC_EXCLUDE_STATUS
 #include "modules/StatusMessageModule.h"
 #endif
+#if defined(DAX_GLOW) && defined(ARCH_ESP32)
+#include "modules/daxglow/GlowModule.h"
+#endif
 
 #if defined(HAS_HARDWARE_WATCHDOG)
 #include "watchdog/watchdogThread.h"
@@ -165,6 +168,9 @@ void setupModules()
 #endif
 #if !MESHTASTIC_EXCLUDE_GENERIC_THREAD_MODULE
     new GenericThreadModule();
+#endif
+#if defined(DAX_GLOW) && defined(ARCH_ESP32)
+    new GlowModule();
 #endif
     // Note: if the rest of meshtastic doesn't need to explicitly use your module, you do not need to assign the instance
     // to a global variable.
