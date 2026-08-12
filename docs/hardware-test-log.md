@@ -91,3 +91,34 @@ Both nodes report the exact `HELTEC_WIRELESS_TRACKER_V2` hardware model, `heltec
 Stock BLE discovery now finds `Meshtastic_ed2c` and `Meshtastic_ef24`. Dax entered the separate on-screen pairing PIN for each board, and both returned their node table over BLE. The CLI displayed the requested data but hung while disconnecting, so each already-complete process was interrupted; this was a host BLE-client cleanup issue, not a device test failure.
 
 The next test requires explicit approval to set the legal LoRa region on both boards. Once their regions match, the existing default primary-channel configuration is already compatible for peer discovery, bidirectional acknowledged text, repeatability, and stationary RSSI/SNR measurements. Stock firmware does not contain the Dax Glow effects, and no external addressable strip is wired, so physical light testing remains pending the custom firmware and bench circuit.
+
+## 2026-08-12 13:46-14:00 PDT — US region and bidirectional mesh baseline
+
+Dax explicitly approved setting both nodes to the US LoRa region. `lora.region` was changed from `UNSET` to `US` on Board A and then Board B, with access serialized per port. Each setting caused the expected configuration restart; both nodes subsequently reported reboot count 2, named region `US`, stable enum value 1, and the same default primary-channel URL. No other setting or channel field was changed. An immediate compact read during Board B's restart briefly returned enum 0, but the full named configuration and a later stable compact read both confirmed `US`.
+
+### Discovery and key exchange
+
+- Board A heard Board B's post-region startup NodeInfo at 0 hops and 7 dB SNR.
+- A short channel discovery message from Board A reached Board B at 0 hops and 8 dB SNR.
+- The repository's documented `ToRadio.Heartbeat(nonce=1)` path triggered a fresh NodeInfo broadcast from each node without another restart or configuration change.
+- Final node databases on both boards contain both exact Tracker V2 identities and both 32-byte public keys.
+
+### Directed delivery and acknowledgments
+
+Three uniquely identified directed text packets were sent in each direction using `wantAck=True`. A receiver-side decoded-text listener proved application delivery, while a sender-side response handler separately captured the routing ACK for the exact packet ID.
+
+| Direction | Attempts | Delivered | Explicit ACK `NONE` | Hops | Received SNR range | Sampled RSSI |
+| --------- | -------- | --------- | ------------------- | ---- | ------------------ | ------------ |
+| A → B     | 3        | 3         | 3                   | 0    | 7.25–8.75 dB       | −29 dBm      |
+| B → A     | 3        | 3         | 3                   | 0    | 7.25–8.50 dB       | −37 dBm      |
+
+All six packets retained the intended unicast destination and reported `hopStart=3`, `hopLimit=3`, proving no hop was consumed. RSSI was present in one decoded sample per direction; the Python client omitted it from the other four packet dictionaries, so no value was inferred.
+
+### Route test
+
+| Request | Forward path    | Return path     | Result |
+| ------- | --------------- | --------------- | ------ |
+| A → B   | direct, 9.25 dB | direct, 7.75 dB | Pass   |
+| B → A   | direct, 9.25 dB | direct, 7.25 dB | Pass   |
+
+Both application serial ports were present and unclaimed after testing. This completes the stationary stock-firmware USB, BLE, discovery, public-key, directed-delivery, explicit-ACK, repeatability, and direct-route baseline. Meaningful range testing now requires physically separating the nodes and recording distance/obstructions. Physical light-effect testing still requires custom Glow firmware plus an externally powered, fused, level-shifted addressable strip that is visibly observable.
