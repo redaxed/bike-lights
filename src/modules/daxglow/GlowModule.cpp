@@ -189,8 +189,20 @@ void GlowModule::prepareStatusReply(uint32_t token, uint64_t sampleEpochMs, daxg
         daxglow::encodeStatus(status, myReply->decoded.payload.bytes, sizeof(myReply->decoded.payload.bytes));
 }
 
+void GlowModule::deliverLocalStatusReply(const meshtastic_MeshPacket &request)
+{
+    if (request.from != 0 || !myReply)
+        return;
+
+    meshtastic_MeshPacket *reply = allocReply();
+    setReplyTo(reply, request);
+    service->sendToPhone(reply);
+    ignoreRequest = true;
+}
+
 ProcessMessage GlowModule::handleReceived(const meshtastic_MeshPacket &mp)
 {
+    ignoreRequest = false;
     const uint8_t *payload = mp.decoded.payload.bytes;
     const size_t size = mp.decoded.payload.size;
     if (size < daxglow::HEADER_SIZE || payload[0] != 'G' || payload[1] != 'L' || payload[2] != 'W')
@@ -216,16 +228,20 @@ ProcessMessage GlowModule::handleReceived(const meshtastic_MeshPacket &mp)
         } else {
             LOG_WARN("DAX Glow cue rejected: result=%u", static_cast<unsigned>(result));
         }
-        if (mp.decoded.want_response)
+        if (mp.decoded.want_response) {
             prepareStatusReply(incoming.cueId, incoming.startEpochMs, result);
+            deliverLocalStatusReply(mp);
+        }
         return ProcessMessage::STOP;
     }
 
     if (type == daxglow::MessageType::STATUS_REQUEST) {
         daxglow::StatusRequest request;
         const daxglow::Result result = daxglow::decodeStatusRequest(payload, size, request);
-        if (mp.decoded.want_response)
+        if (mp.decoded.want_response) {
             prepareStatusReply(request.token, request.sampleEpochMs, result);
+            deliverLocalStatusReply(mp);
+        }
         return ProcessMessage::STOP;
     }
 
@@ -241,8 +257,10 @@ ProcessMessage GlowModule::handleReceived(const meshtastic_MeshPacket &mp)
             hostClockSetMonotonicMs = receivedAt;
             hostClockValid = true;
         }
-        if (mp.decoded.want_response)
+        if (mp.decoded.want_response) {
             prepareStatusReply(request.token, request.hostEpochMs, result);
+            deliverLocalStatusReply(mp);
+        }
         return ProcessMessage::STOP;
     }
 

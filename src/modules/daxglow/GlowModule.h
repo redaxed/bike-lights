@@ -39,6 +39,7 @@ class GlowModule : public SinglePortModule, private concurrency::OSThread
     uint64_t glowNowMs(daxglow::ClockSource &source) const;
     daxglow::Cue activeCue(bool &hasActiveCue) const;
     void prepareStatusReply(uint32_t token, uint64_t sampleEpochMs, daxglow::Result result);
+    void deliverLocalStatusReply(const meshtastic_MeshPacket &request);
     void renderFrame(const daxglow::Cue &cue, uint64_t frameEpochMs);
 
     mutable concurrency::Lock stateLock;
