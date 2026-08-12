@@ -28,13 +28,13 @@ class GlowModule : public SinglePortModule, private concurrency::OSThread
 {
   public:
     GlowModule();
-    void setup() override;
 
   protected:
     ProcessMessage handleReceived(const meshtastic_MeshPacket &mp) override;
     int32_t runOnce() override;
 
   private:
+    void initializeOutput();
     uint64_t monotonicMs() const;
     uint64_t glowNowMs(daxglow::ClockSource &source) const;
     daxglow::Cue activeCue(bool &hasActiveCue) const;

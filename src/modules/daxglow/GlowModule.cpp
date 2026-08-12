@@ -36,9 +36,10 @@ GlowModule::GlowModule()
       pixels(DAX_GLOW_PIXEL_COUNT, DAX_GLOW_DATA_PIN, NEO_GRB + NEO_KHZ800)
 {
     loopbackOk = true;
+    initializeOutput();
 }
 
-void GlowModule::setup()
+void GlowModule::initializeOutput()
 {
     selfTestStartMs = monotonicMs();
     pixels.begin();
